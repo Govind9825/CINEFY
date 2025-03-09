@@ -1,0 +1,165 @@
+.container {
+    margin: 0;
+    background-color: #000;
+    color: #eee;
+    font-family: "Poppins", sans-serif;
+    font-size: 12px;
+  }
+  
+  header {
+    width: 1140px;
+    max-width: 80%;
+    margin: auto;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    position: relative;
+    z-index: 100;
+  }
+  
+  header a {
+    color: #eee;
+    margin-right: 5px;
+    padding: 5px 10px;
+    transition: 0.2s;
+  }
+  
+  header a.active,
+  header a:hover {
+    background: #ff1414cb;
+    border-radius: 2px;
+  }
+  
+  .slider {
+    height: 100vh;
+    margin-top: -50px;
+    width: 100vw;
+    overflow: hidden;
+    position: relative;
+  }
+  
+  .slider .list .item {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    inset: 0 0 0 0;
+  }
+  
+  .slider .list .item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  .slider .list .item .content {
+    position: absolute;
+    top: 20%;
+    width: 1140px;
+    max-width: 80%;
+    left: 50%;
+    transform: translateX(-50%);
+    padding-right: 30%;
+    box-sizing: border-box;
+    color: #fff;
+    text-shadow: 0 5px 10px #0004;
+  }
+  
+  .slider .list .item .content .title,
+  .slider .list .item .content .type {
+    font-size: 5em;
+    font-weight: bold;
+    line-height: 1.3em;
+  }
+  
+  .slider .list .item .type {
+    color: #ff1414cb;
+  }
+  
+  .slider .list .item .button {
+    display: grid;
+    grid-template-columns: repeat(2, 130px);
+    grid-template-rows: 40px;
+    gap: 5px;
+    margin-top: 20px;
+  }
+  
+  .slider .list .item .button button {
+    border: none;
+    background-color: #eee;
+    font-family: "Poppins", sans-serif;
+    font-weight: 500;
+    cursor: pointer;
+    transition: 0.4s;
+    letter-spacing: 2px;
+  }
+  
+  .slider .list .item .button button:hover {
+    letter-spacing: 3px;
+  }
+  
+  .slider .list .item .button button:nth-child(2) {
+    background-color: transparent;
+    border: 1px solid #fff;
+    color: #eee;
+  }
+  
+  .thumbnail {
+    position: absolute;
+    bottom: 50px;
+    left: 50%;
+    width: max-content;
+    z-index: 100;
+    display: flex;
+    gap: 20px;
+  }
+  
+  .thumbnail .item {
+    width: 150px;
+    height: 220px;
+    flex-shrink: 0;
+    position: relative;
+  }
+  
+  .thumbnail .item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 20px;
+    box-shadow: 5px 0 15px rgba(0, 0, 0, 0.3);
+  }
+  
+  .nextPrevArrows {
+    position: absolute;
+    top: 80%;
+    right: 52%;
+    z-index: 100;
+    width: 300px;
+    max-width: 30%;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  
+  .nextPrevArrows button {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #ff1414cb;
+    border: none;
+    color: #fff;
+    font-family: monospace;
+    font-weight: bold;
+    transition: 0.5s;
+    cursor: pointer;
+  }
+  
+  .nextPrevArrows button:hover {
+    background-color: #fff;
+    color: #000;
+  }
+  
+  /* Add animation classes as needed */
+  .next,
+  .prev {
+    /* Define animation styles */
+  }
