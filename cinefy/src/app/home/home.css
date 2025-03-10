@@ -12,24 +12,6 @@ a {
     text-decoration: none;
 }
 
-header {
-    width: 1140px;
-    max-width: 80%;
-    margin: auto;
-    height: 50px;
-    display: flex;
-    align-items: center;
-    position: relative;
-    z-index: 100;
-}
-
-header a {
-    color: #eee;
-    margin-right: 5px;
-    padding: 5px 10px;
-    transition: 0.2s;
-}
-
 a.active {
     background: #ff1414cb;
     border-radius: 2px;
@@ -42,8 +24,8 @@ header a:hover {
 
 /* Slider Section */
 .slider {
-    height: 100vh;
-    margin-top: -50px;
+    height: 80vh;
+    /* margin-top: 50px; */
     width: 100vw;
     overflow: hidden;
     position: relative;
@@ -171,18 +153,23 @@ header a:hover {
     cursor: pointer;
 }
 
+/* .thumbnail .item.active {
+    opacity: 0.5; 
+    pointer-events: none; 
+  } */
+
 .nextPrevArrows button:hover {
     background-color: #fff;
     color: #000;
 }
 
 /* Animation Part */
-.slider .list .item:nth-child(1) {
+.slider .list .item:nth-child(0) {
     z-index: 1;
 }
 
 /* Animation for next button click */
-.slider.next .list .item:nth-child(1) img {
+.slider.next .list .item:nth-child(0) img {
     width: 150px;
     height: 220px;
     position: absolute;
