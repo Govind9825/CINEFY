@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/app/lib/db";
-import video from "@/app/models/video";
+import video from "@/app/models/Content";
 
 export async function GET() {
     try {

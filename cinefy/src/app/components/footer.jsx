@@ -3,7 +3,7 @@ import React from "react";
 const footer = () => {
   return (
     <>
-      <footer className="bg-white dark:bg-black  left-0 w-full">
+      <footer className="bg-black mx-auto left-0 w-[90vw]">
         <div className="mx-auto w-full max-w-screen-xl p-4 py-6 lg:py-8">
           <div className="md:flex md:justify-between">
             <div className="mb-6 md:mb-0">
@@ -13,14 +13,14 @@ const footer = () => {
                   className="h-8 me-3"
                   alt="FlowBite Logo"
                 />
-                <span className="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">
+                <span className="self-center text-2xl font-semibold whitespace-nowrap text-white">
                   Flowbite
                 </span>
               </a>
             </div>
             <div className="grid grid-cols-2 gap-8 sm:gap-6 sm:grid-cols-3">
               <div>
-                <h2 className="mb-6 text-sm font-semibold text-gray-900 uppercase dark:text-white">
+                <h2 className="mb-6 text-sm font-semibold  uppercase text-white">
                   Resources
                 </h2>
                 <ul className="text-gray-500 dark:text-gray-400 font-medium flex flex-col">
@@ -37,7 +37,7 @@ const footer = () => {
                 </ul>
               </div>
               <div>
-                <h2 className="mb-6 text-sm font-semibold text-gray-900 uppercase dark:text-white">
+                <h2 className="mb-6 text-sm font-semibold uppercase text-white">
                   Follow us
                 </h2>
                 <ul className="text-gray-500 dark:text-gray-400 font-medium flex flex-col">
@@ -60,7 +60,7 @@ const footer = () => {
                 </ul>
               </div>
               <div>
-                <h2 className="mb-6 text-sm font-semibold text-gray-900 uppercase dark:text-white">
+                <h2 className="mb-6 text-sm font-semibold uppercase text-white">
                   Legal
                 </h2>
                 <ul className="text-gray-500 dark:text-gray-400 font-medium flex flex-col">

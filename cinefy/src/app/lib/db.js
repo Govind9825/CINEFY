@@ -3,7 +3,6 @@ const mongoose = require('mongoose');
 
 
 const MONGODB_URI = process.env.MONGO_URI
-console.log(MONGODB_URI);
 
 if (!MONGODB_URI) {
     throw new Error(
@@ -26,7 +25,6 @@ async function dbConnect() {
             bufferCommands: false,
         }
         cached.promise = mongoose.connect(MONGODB_URI, opts).then(mongoose => {
-            console.log('Db connected')
             return mongoose
         })
     }
