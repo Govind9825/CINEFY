@@ -13,6 +13,7 @@
     "boxicons": "^2.1.4",
     "clsx": "^2.1.1",
     "env": "^0.0.2",
+    "framer-motion": "^12.5.0",
     "googleapis": "^146.0.0",
     "lucide-react": "^0.477.0",
     "mini-svg-data-uri": "^1.4.4",

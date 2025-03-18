@@ -142,11 +142,12 @@ export default function AnimeWatchPage() {
           >
             {selectedEpisodeData?.link ? (
               <iframe
-                className="w-full h-full"
-                src={selectedEpisodeData.link}
-                allowFullScreen
-                allow="autoplay"
-              ></iframe>
+              className="w-full h-full"
+              src={`${selectedEpisodeData.link}?hl=en&cc_lang_pref=en`}
+              allowFullScreen
+              allow="autoplay"
+            ></iframe>
+            
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
                 <p className="text-gray-400">No video URL provided.</p>

@@ -19,15 +19,16 @@ const Upload = () => {
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
   const [genre, setGenre] = useState("");
+  const [premium, setpremium] = useState("");
   const [thumbnail, setThumbnail] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [current, setCurrent] = useState("main");
   const [expandedElement, setExpandedElement] = useState(null);
   const [addSeasons, setAddSeasons] = useState(false);
   const [seasonNumber, setSeasonNumber] = useState("");
-  const [episodeCount, setEpisodeCount] = useState("");
-  const [addingEpisodes, setAddingEpisodes] = useState(false);
-  const [episodes, setEpisodes] = useState([]);
+  const [episodeName, setEpisodeName] = useState("");
+  const [episodeDesc, setEpisodeDesc] = useState("");
+  const [episodeVideo, setEpisodeVideo] = useState(null);
   const [uploadProgress, setUploadProgress] = useState(0);
 
   const fetchContent = async () => {
@@ -82,19 +83,16 @@ const Upload = () => {
     }
   };
 
-  const addData = async (episodes, expandedElement, seasonNumber) => {
+  const addData = async (episode, expandedElement, seasonNumber) => {
     try {
       const formData = new FormData();
       formData.append("_id", expandedElement);
       formData.append("seasonNumber", seasonNumber);
-
-      episodes.forEach((episode, index) => {
-        formData.append(`episodes[${index}][name]`, episode.name);
-        formData.append(`episodes[${index}][desc]`, episode.desc);
-        if (episode.video) {
-          formData.append(`episodes[${index}][file]`, episode.video);
-        }
-      });
+      formData.append("episodes[0][name]", episode.name);
+      formData.append("episodes[0][desc]", episode.desc);
+      if (episode.video) {
+        formData.append("episodes[0][file]", episode.video);
+      }
 
       const response = await fetch("http://localhost:3000/api/upload", {
         method: "PUT",
@@ -102,13 +100,15 @@ const Upload = () => {
       });
 
       if (!response.ok) {
-        throw new Error("Could not edit the content");
+        throw new Error("Could not add the episode");
       }
 
-      toast.success("Edit Successful");
+      toast.success("Episode added successfully!");
       fetchContent();
     } catch (error) {
-      toast.error("❌ Error: " + (error.message || "An unknown error occurred"));
+      toast.error(
+        "❌ Error: " + (error.message || "An unknown error occurred")
+      );
     }
   };
 
@@ -138,41 +138,60 @@ const Upload = () => {
     }
   };
 
-  const handleEpisodeChange = (index, field, value) => {
-    setEpisodes((prev) => {
-      const updatedEpisodes = [...prev];
-      updatedEpisodes[index] = {
-        ...updatedEpisodes[index],
-        [field]: value,
-      };
-      return updatedEpisodes;
-    });
-  };
+  const saveEpisode = async () => {
+    if (!episodeName || !episodeDesc || !episodeVideo) {
+      toast.warning("Please fill out all fields for the episode.");
+      return;
+    }
 
-  const saveEpisodes = async () => {
     setIsSubmitting(true);
-    await addData(episodes, expandedElement, seasonNumber);
-    setIsSubmitting(false);
-    setAddingEpisodes(false);
-    setEpisodes([]);
+
+    const formData = new FormData();
+    formData.append("_id", expandedElement);
+    formData.append("seasonNumber", seasonNumber);
+    formData.append("episodeName", episodeName);
+    formData.append("episodeDesc", episodeDesc);
+    formData.append("episodeVideo", episodeVideo);
+
+    try {
+      const response = await fetch("http://localhost:3000/api/upload", {
+        method: "PUT",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to add episode");
+      }
+
+      toast.success("Episode added successfully!");
+      fetchContent(); // Refresh the content list
+    } catch (error) {
+      toast.error("Error: " + error.message);
+    } finally {
+      setIsSubmitting(false);
+      setEpisodeName("");
+      setEpisodeDesc("");
+      setEpisodeVideo(null);
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-  
+
     if (!name || !desc || !genre || !thumbnail) {
       toast.warning("Please fill out all fields and select a thumbnail.");
       return;
     }
-  
+
     setIsSubmitting(true);
-  
+
     const formData = new FormData();
     formData.append("name", name);
     formData.append("desc", desc);
     formData.append("genre", genre);
     formData.append("thumbnail", thumbnail);
-  
+    formData.append("premium" , premium)
+
     const xhr = new XMLHttpRequest();
     xhr.upload.addEventListener("progress", (event) => {
       if (event.lengthComputable) {
@@ -180,29 +199,28 @@ const Upload = () => {
         setUploadProgress(percentComplete);
       }
     });
-  
+
     xhr.open("POST", "http://localhost:3000/api/upload", true);
     xhr.send(formData);
-  
+
     xhr.onload = () => {
       if (xhr.status === 200) {
-        // Handle the response directly here
         const response = JSON.parse(xhr.responseText);
         toast.success("Content added successfully!");
-  
+
         setName("");
         setDesc("");
         setGenre("");
         setThumbnail(null);
         setCurrent("main");
-        fetchContent(); // Refresh the content list
+        fetchContent();
       } else {
         toast.error("Upload failed");
       }
       setIsSubmitting(false);
       setUploadProgress(0);
     };
-  
+
     xhr.onerror = () => {
       toast.error("Upload failed");
       setIsSubmitting(false);
@@ -247,7 +265,7 @@ const Upload = () => {
                 />
                 <div className="flex-1">
                   <h2 className="text-xl font-semibold">{element.name}</h2>
-                  <p className="text-gray-400">{element.desc}</p>
+                  {/* <p className="text-gray-400">{element.desc}</p> */}
                 </div>
                 <div className="flex space-x-4">
                   <button
@@ -259,7 +277,9 @@ const Upload = () => {
                     className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 flex items-center space-x-2"
                   >
                     {expandedElement === element._id ? <FaTimes /> : <FaEdit />}
-                    <span>{expandedElement === element._id ? "Close" : "Edit"}</span>
+                    <span>
+                      {expandedElement === element._id ? "Close" : "Edit"}
+                    </span>
                   </button>
                   <button
                     onClick={() => handleDelete(element._id)}
@@ -284,7 +304,7 @@ const Upload = () => {
                           <ul className="ml-6 list-disc">
                             {season.episodes.map((episode, eIndex) => (
                               <li key={eIndex} className="text-gray-300">
-                                {episode.name} - {episode.desc}
+                                {episode.name}
                               </li>
                             ))}
                           </ul>
@@ -292,31 +312,23 @@ const Upload = () => {
                       ))}
                     </div>
                   )}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <button className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 flex items-center space-x-2">
-                      <FaEdit />
-                      <span>Update Name</span>
-                    </button>
-                    <button className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 flex items-center space-x-2">
-                      <FaEdit />
-                      <span>Update Description</span>
-                    </button>
-                    <button className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 flex items-center space-x-2">
-                      <FaEdit />
-                      <span>Update Thumbnail</span>
-                    </button>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <button
                       onClick={() => setAddSeasons(!addSeasons)}
-                      className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 flex items-center space-x-2"
+                      className="bg-purple-500 hover:bg-purple-600 text-white font-bold py-2 px-6 rounded-lg transition duration-300 flex items-center space-x-2"
                     >
                       {addSeasons ? <FaTimes /> : <FaPlus />}
-                      <span>{addSeasons ? "Cancel Add Seasons" : "Add Seasons"}</span>
+                      <span>
+                        {addSeasons ? "Cancel Add Episode" : "Add Episode"}
+                      </span>
                     </button>
                   </div>
 
                   {addSeasons && (
                     <div className="bg-gray-700 p-6 rounded-lg shadow-lg">
-                      <h2 className="text-lg font-bold mb-4">Add New Season</h2>
+                      <h2 className="text-lg font-bold mb-4">
+                        Add New Episode
+                      </h2>
                       <div className="space-y-4">
                         <div>
                           <label className="block text-sm font-medium mb-1">
@@ -330,106 +342,56 @@ const Upload = () => {
                         </div>
                         <div>
                           <label className="block text-sm font-medium mb-1">
-                            Number of Episodes
+                            Episode Name
                           </label>
                           <input
-                            type="number"
+                            type="text"
                             className="w-full p-2 bg-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            onChange={(e) => setEpisodeCount(e.target.value)}
+                            value={episodeName}
+                            onChange={(e) => setEpisodeName(e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">
+                            Episode Description
+                          </label>
+                          <textarea
+                            className="w-full p-2 bg-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            value={episodeDesc}
+                            onChange={(e) => setEpisodeDesc(e.target.value)}
+                          ></textarea>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">
+                            Episode Video
+                          </label>
+                          <input
+                            type="file"
+                            accept="video/mp4, video/webm, video/ogg, video/x-matroska"
+                            className="w-full p-2 bg-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            onChange={(e) => setEpisodeVideo(e.target.files[0])}
                           />
                         </div>
                         <button
-                          className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 flex items-center space-x-2"
-                          onClick={() => setAddingEpisodes(true)}
+                          className={`bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 flex items-center space-x-2 ${
+                            isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+                          }`}
+                          onClick={saveEpisode}
+                          disabled={isSubmitting}
                         >
-                          <FaPlus />
-                          <span>Add Episodes</span>
+                          {isSubmitting ? (
+                            <>
+                              <FaSpinner className="animate-spin mr-2" />
+                              Saving...
+                            </>
+                          ) : (
+                            <>
+                              <FaSave />
+                              <span>Save Episode</span>
+                            </>
+                          )}
                         </button>
                       </div>
-
-                      {addingEpisodes && (
-                        <div className="mt-6 space-y-6">
-                          {[...Array(Number(episodeCount))].map((_, index) => (
-                            <div
-                              key={index}
-                              className="bg-gray-600 p-4 rounded-lg shadow-lg"
-                            >
-                              <h3 className="text-lg font-semibold mb-2">
-                                Episode {index + 1}
-                              </h3>
-                              <div className="space-y-4">
-                                <div>
-                                  <label className="block text-sm font-medium mb-1">
-                                    Episode Name
-                                  </label>
-                                  <input
-                                    type="text"
-                                    className="w-full p-2 bg-gray-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    onChange={(e) =>
-                                      handleEpisodeChange(
-                                        index,
-                                        "name",
-                                        e.target.value
-                                      )
-                                    }
-                                  />
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-medium mb-1">
-                                    Episode Description
-                                  </label>
-                                  <textarea
-                                    className="w-full p-2 bg-gray-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    onChange={(e) =>
-                                      handleEpisodeChange(
-                                        index,
-                                        "desc",
-                                        e.target.value
-                                      )
-                                    }
-                                  ></textarea>
-                                </div>
-                                <div>
-                                  <label className="block text-sm font-medium mb-1">
-                                    Episode Video
-                                  </label>
-                                  <input
-                                    type="file"
-                                    accept="video/*"
-                                    className="w-full p-2 bg-gray-500 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    onChange={(e) =>
-                                      handleEpisodeChange(
-                                        index,
-                                        "video",
-                                        e.target.files[0]
-                                      )
-                                    }
-                                  />
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                          <button
-                            className={`bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg transition duration-300 flex items-center space-x-2 ${
-                              isSubmitting ? "opacity-50 cursor-not-allowed" : ""
-                            }`}
-                            onClick={saveEpisodes}
-                            disabled={isSubmitting}
-                          >
-                            {isSubmitting ? (
-                              <>
-                                <FaSpinner className="animate-spin mr-2" />
-                                Saving...
-                              </>
-                            ) : (
-                              <>
-                                <FaSave />
-                                <span>Save Episodes</span>
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>
@@ -482,9 +444,22 @@ const Upload = () => {
                 required
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Premium Content?
+              </label>
+              <input
+                type="checkbox"
+                checked={premium}
+                onChange={(e) => setpremium(e.target.checked)}
+                className="w-6 h-6 rounded bg-gray-700 focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">Thumbnail</label>
+              <label className="block text-sm font-medium mb-1">
+                Thumbnail
+              </label>
               {thumbnail ? (
                 <div className="flex items-center justify-between bg-gray-700 p-2 rounded-lg">
                   <span className="text-white">{thumbnail.name}</span>

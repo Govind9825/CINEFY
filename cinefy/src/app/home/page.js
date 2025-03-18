@@ -9,49 +9,75 @@ import Footer from "../components/footer";
 import "./home.css";
 
 export default function Home() {
-  // Create references for next, prev buttons, slider, and thumbnails
   const nextBtnRef = useRef(null);
   const prevBtnRef = useRef(null);
   const sliderRef = useRef(null);
   const sliderListRef = useRef(null);
   const thumbnailRef = useRef(null);
   const [sliderData, setVideos] = useState([]);
-  const [play , setplay] = useState(null)
+  const [play, setplay] = useState(null);
+  const [user, setUser] = useState();
 
   const { data: session, status } = useSession();
   const router = useRouter();
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.push("/login");
+      router.push("/");
     }
   }, [status, router]);
 
-  const handleLogout = async () => {
-    await signOut();
-    router.push("/login");
-  };
+  useEffect(() => {
+    const fetchUserDetails = async () => {
+      if (!session?.user?.email) return;
+
+      try {
+        const res = await fetch(
+          `http://localhost:3000/api/login?email=${session.user.email}`,
+          {
+            method: "GET",
+          }
+        );
+
+        if (!res.ok) {
+          throw new Error("Something went wrong");
+        }
+
+        const data = await res.json();
+        setUser(data.user);
+      } catch (error) {
+        console.error("Error fetching user details:", error.message);
+      }
+    };
+
+    if (session) fetchUserDetails();
+  }, [session?.user?.email, session]);
 
   useEffect(() => {
     async function fetchVideos() {
       try {
         const res = await fetch("http://localhost:3000/api/video");
         const data = await res.json();
+
         if (data.success) {
-          setVideos(data.videos);
+          if (user?.premium) {
+            setVideos(data.videos);
+          } else {
+            setVideos(data.videos.filter((e) => e.premium === false));
+          }
         } else {
           console.error("Error fetching videos:", data.message);
         }
       } catch (error) {
         console.error("Fetch error:", error);
-      } finally {
       }
     }
-    fetchVideos();
-    // console.log(videos);
-  }, []);
 
-  // Function to handle slider movement
+    if (user !== undefined) {
+      fetchVideos();
+    }
+  }, [user]);
+
   const moveSlider = (direction) => {
     let sliderItems = sliderListRef.current.querySelectorAll(".item");
     let thumbnailItems = thumbnailRef.current.querySelectorAll(".item");
@@ -79,7 +105,6 @@ export default function Home() {
     );
   };
 
-  // UseEffect to set up event listeners when the component mounts
   useEffect(() => {
     if (session) {
       const nextBtn = nextBtnRef.current;
@@ -97,7 +122,6 @@ export default function Home() {
         console.error("Next or Prev button not found in the DOM.");
       }
 
-      // Initial setup for thumbnail append
       let thumbnailItems = thumbnailRef.current?.querySelectorAll(".item");
       if (thumbnailItems && thumbnailItems.length > 0) {
         thumbnailRef.current.appendChild(thumbnailItems[0]);
@@ -110,13 +134,40 @@ export default function Home() {
     setplay(item);
     sessionStorage.setItem("selectedContent", JSON.stringify(item));
     router.push("/watch");
-};
-  
+  };
+
+  const toggleLike = async (id) => {
+    if (!user) return;
+
+    const isLiked = user.fav.some((fav) => fav.Content_id === id);
+    console.log(isLiked);
+    console.log(id);
+    console.log(user.email);
+
+    try {
+      const response = await fetch(`http://localhost:3000/api/favourite`, {
+        method: isLiked ? "DELETE" : "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: user.email, id }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update favorites");
+      }
+
+      const updatedUser = await response.json();
+      setUser(updatedUser.user);
+    } catch (error) {
+      console.error("Error toggling like:", error);
+    }
+  };
 
   return (
     <>
       {session ? (
-        <div className="h-auto w-[100vw]">
+        <div className="h-auto overflow-auto scrollbar-width:none w-[100vw]">
           <Navbar />
 
           <div className="slider" ref={sliderRef}>
@@ -133,19 +184,23 @@ export default function Home() {
                     <Image
                       src={item.thumbnail}
                       alt={item.name}
-                      fill 
+                      fill
                       style={{ objectFit: "cover" }}
                     />
                   </div>
                   <div className="content">
-                    <div className="title">{item.name}</div>
-                    {/* <div className="type">{item.type}</div> */}
-                    <div className="description">{item.desc}</div>
                     <span className="button">
-                    <button onClick={() => playVideo(item)}>Play</button>
-
+                      <button onClick={() => playVideo(item)}>Play</button>
                       <button>Stream</button>
                     </span>
+                    <div
+                      onClick={() => toggleLike(item._id)}
+                      className="cursor-pointer"
+                    >
+                      {user?.fav.some((fav) => fav.Content_id === item._id)
+                        ? "❤️ Liked"
+                        : "🤍 Like"}
+                    </div>
                   </div>
                 </div>
               ))}
