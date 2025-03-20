@@ -1,6 +1,6 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
-
+  
 const addUser = async (user) => {
   try {
     const response = await fetch("http://localhost:3000/api/login", {
@@ -37,7 +37,7 @@ export const authOptions = {
       return session;
     },
     async redirect({ url, baseUrl }) {
-      return `${baseUrl}/home`; // Redirect to "/home"
+      return `${baseUrl}/home`; 
     },
   },
 };

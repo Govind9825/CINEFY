@@ -27,27 +27,75 @@ const auth = new google.auth.GoogleAuth({
 const driveService = google.drive({ version: "v3", auth });
 
 async function uploadFileToDrive(file) {
-  const arrayBuffer = await file.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
   const name = file.name || "uploaded_file";
   const type = file.type || "application/octet-stream";
+  const fileSize = file.size;
 
-  const response = await driveService.files.create({
-    requestBody: { name, mimeType: type },
-    media: { mimeType: type, body: Readable.from(buffer) },
-    fields: "id",
-  });
+  // Step 1: Initiate the resumable upload session
+  const res = await driveService.files.create(
+    {
+      requestBody: {
+        name: name,
+        mimeType: type,
+      },
+      media: {
+        mimeType: type,
+        body: Readable.from(Buffer.from(await file.arrayBuffer())), // Stream the file
+      },
+      supportsAllDrives: true,
+      supportsTeamDrives: true,
+      uploadType: "resumable", // Enable resumable uploads
+    },
+    {
+      onUploadProgress: (evt) => {
+        console.log(`Uploaded ${evt.bytesRead} bytes of ${fileSize}`);
+      },
+    }
+  );
 
-  if (!response.data.id) {
-    throw new Error(`Failed to upload ${name} to Google Drive.`);
+  // Step 2: Get the upload URL from the response
+  const uploadUrl = res.config.url;
+
+  // Step 3: Upload the file in chunks
+  const chunkSize = 5 * 1024 * 1024; // 5 MB chunks (adjust as needed)
+  let offset = 0;
+
+  while (offset < fileSize) {
+    const chunk = await file.slice(offset, offset + chunkSize).arrayBuffer();
+    const chunkStream = Readable.from(Buffer.from(chunk));
+
+    const response = await driveService.files.update(
+      {
+        fileId: res.data.id,
+        media: {
+          mimeType: type,
+          body: chunkStream,
+        },
+        uploadType: "resumable",
+        supportsAllDrives: true,
+        supportsTeamDrives: true,
+      },
+      {
+        headers: {
+          "Content-Length": chunk.byteLength,
+          "Content-Range": `bytes ${offset}-${offset + chunk.byteLength - 1}/${fileSize}`,
+        },
+      }
+    );
+
+    offset += chunk.byteLength;
+    console.log(`Uploaded ${offset} bytes of ${fileSize}`);
   }
 
+  console.log("File uploaded successfully:", res.data.id);
+
+  // Step 4: Make the file publicly accessible
   await driveService.permissions.create({
-    fileId: response.data.id,
+    fileId: res.data.id,
     requestBody: { role: "reader", type: "anyone" },
   });
 
-  return `https://drive.google.com/file/d/${response.data.id}/preview`;
+  return `https://drive.google.com/file/d/${res.data.id}/preview`;
 }
 
 export async function GET() {
@@ -69,7 +117,8 @@ export async function POST(req) {
     const desc = formData.get("desc");
     const genre = formData.get("genre");
     const imageFile = formData.get("thumbnail");
-    const premium = formData.get("premium");
+    const premium = formData.get("premium") === "true";
+
 
     if (!name || !desc || !genre || !imageFile) {
       return NextResponse.json({ success: false, error: "All fields are required!" });
@@ -129,8 +178,13 @@ export async function DELETE(req) {
 
 export async function PUT(req) {
   try {
+    console.log("Connecting to the database...");
     await dbConnect();
+    console.log("Database connected successfully.");
+
+    console.log("Parsing form data...");
     const formData = await req.formData();
+    console.log("Form data parsed successfully.");
 
     const _id = formData.get("_id");
     const seasonNumber = parseInt(formData.get("seasonNumber"));
@@ -138,25 +192,39 @@ export async function PUT(req) {
     const episodeDesc = formData.get("episodeDesc");
     const episodeVideo = formData.get("episodeVideo");
 
+    console.log("Extracted form data:", { _id, seasonNumber, episodeName, episodeDesc, episodeVideo });
+
     if (!_id || !seasonNumber || !episodeName || !episodeDesc || !episodeVideo) {
       throw new Error("All fields are required");
     }
 
+    console.log("Uploading episode video to drive...");
     const link = await uploadFileToDrive(episodeVideo);
+    console.log("Episode video uploaded successfully. Link:", link);
 
+    console.log("Finding content by ID:", _id);
     const content = await Content.findById(_id);
     if (!content) throw new Error("Content not found");
+    console.log("Content found:", content);
 
     const seasonIndex = content.seasons.findIndex(s => s.seasonNumber === seasonNumber);
+    console.log("Season index:", seasonIndex);
+
     if (seasonIndex !== -1) {
+      console.log("Adding episode to existing season...");
       content.seasons[seasonIndex].episodes.push({ name: episodeName, desc: episodeDesc, link });
     } else {
+      console.log("Creating new season and adding episode...");
       content.seasons.push({ seasonNumber, episodes: [{ name: episodeName, desc: episodeDesc, link }] });
     }
 
+    console.log("Saving updated content...");
     await content.save();
+    console.log("Content saved successfully.");
+
     return NextResponse.json({ success: true, message: "Episode added successfully" });
   } catch (error) {
+    console.error("Error occurred:", error);
     return NextResponse.json({ success: false, error: error.message });
   }
 }
