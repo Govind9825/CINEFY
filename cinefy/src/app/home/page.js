@@ -7,6 +7,7 @@ import { redirect, useRouter } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import Footer from "../components/footer";
 import "./home.css";
+import Call from "../components/Call";
 
 export default function Home() {
   const nextBtnRef = useRef(null);
@@ -16,6 +17,7 @@ export default function Home() {
   const thumbnailRef = useRef(null);
   const [sliderData, setVideos] = useState([]);
   const [play, setplay] = useState(null);
+  const [stream, setStream] = useState(null);
   const [user, setUser] = useState();
 
   const { data: session, status } = useSession();
@@ -130,10 +132,16 @@ export default function Home() {
   }, [session]);
 
   const playVideo = (item) => {
-    console.log("Item received in playVideo:", item);
     setplay(item);
     sessionStorage.setItem("selectedContent", JSON.stringify(item));
     router.push("/watch");
+  };
+
+
+  const streamVideo = (item) => {
+    setStream(item);
+    sessionStorage.setItem("selectedContent", JSON.stringify(item));
+    router.push("/stream");
   };
 
   const toggleLike = async (id) => {
@@ -191,7 +199,7 @@ export default function Home() {
                   <div className="content">
                     <span className="button">
                       <button onClick={() => playVideo(item)}>Play</button>
-                      <button>Stream</button>
+                      <button onClick={() => streamVideo(item)}>Stream</button>
                     </span>
                     <div
                       onClick={() => toggleLike(item._id)}

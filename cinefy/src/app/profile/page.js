@@ -39,7 +39,7 @@ const Profile = () => {
 
         const data = await res.json();
         setUser(data.user);
-        setIsPremium(data.user.isPremium);
+        setIsPremium(data.user.premium);
       } catch (error) {
         console.error("Error fetching user details:", error);
       } finally {
@@ -49,6 +49,13 @@ const Profile = () => {
 
     if (session) fetchUserDetails();
   }, [session?.user?.email, session]);
+
+  useEffect(() => {
+    if (isPremium) {
+      setStartDate(user.premiumStartDate);
+      setEndDate(user.premiumEndDate);
+    }
+  }, [isPremium]);
 
   const handlePremiumStatus = (duration) => {
     setIsPremium(true);
