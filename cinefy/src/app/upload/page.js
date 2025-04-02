@@ -39,6 +39,7 @@ const Upload = () => {
   const [uploadStartTime, setUploadStartTime] = useState(null);
   const [fileSize, setFileSize] = useState(0);
   const [uploadedSize, setUploadedSize] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
 
   const fetchContent = async () => {
     try {
@@ -90,6 +91,7 @@ const Upload = () => {
       toast.error("Upload failed: " + error.message);
     } finally {
       setIsSubmitting(false);
+      setIsLoading(false);
       setUploadProgress(0);
       setUploadSpeed(0);
       setEstimatedTime(0);
@@ -101,6 +103,7 @@ const Upload = () => {
 
   const addData = async (episode, expandedElement, seasonNumber) => {
     try {
+      setIsLoading(true);
       const formData = new FormData();
       formData.append("_id", expandedElement);
       formData.append("seasonNumber", seasonNumber);
@@ -125,6 +128,8 @@ const Upload = () => {
       toast.error(
         "❌ Error: " + (error.message || "An unknown error occurred")
       );
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -135,6 +140,7 @@ const Upload = () => {
     }
 
     try {
+      setIsLoading(true);
       const response = await fetch("http://localhost:3000/api/upload", {
         method: "DELETE",
         headers: {
@@ -151,6 +157,8 @@ const Upload = () => {
       }
     } catch (error) {
       toast.error(error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -161,6 +169,7 @@ const Upload = () => {
     }
 
     setIsSubmitting(true);
+    setIsLoading(true);
     setUploadStartTime(Date.now());
     setFileSize(episodeVideo.size);
 
@@ -198,6 +207,7 @@ const Upload = () => {
         toast.error("Failed to add episode");
       }
       setIsSubmitting(false);
+      setIsLoading(false);
       setEpisodeName("");
       setEpisodeDesc("");
       setEpisodeVideo(null);
@@ -209,6 +219,7 @@ const Upload = () => {
     xhr.onerror = () => {
       toast.error("Upload failed");
       setIsSubmitting(false);
+      setIsLoading(false);
       setUploadProgress(0);
       setUploadSpeed(0);
       setEstimatedTime(0);
@@ -226,6 +237,7 @@ const Upload = () => {
     }
 
     setIsSubmitting(true);
+    setIsLoading(true);
     setUploadStartTime(Date.now());
     setFileSize(thumbnail.size);
 
@@ -274,6 +286,7 @@ const Upload = () => {
         toast.error("Upload failed");
       }
       setIsSubmitting(false);
+      setIsLoading(false);
       setUploadProgress(0);
       setUploadSpeed(0);
       setEstimatedTime(0);
@@ -285,6 +298,7 @@ const Upload = () => {
     xhr.onerror = () => {
       toast.error("Upload failed");
       setIsSubmitting(false);
+      setIsLoading(false);
       setUploadProgress(0);
       setUploadSpeed(0);
       setEstimatedTime(0);
@@ -328,9 +342,39 @@ const Upload = () => {
     }
   };
 
+  // Loader Component
+  const LoaderOverlay = () => (
+    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+      <div className="bg-gray-800 p-8 rounded-xl shadow-2xl max-w-md w-full">
+        <div className="flex flex-col items-center text-center">
+          <FaSpinner className="text-blue-500 text-4xl animate-spin mb-4" />
+          <h3 className="text-xl font-bold text-white mb-2">Please wait</h3>
+          <p className="text-gray-300">Content is being added to the platform...</p>
+          
+          {(isSubmitting && uploadProgress > 0) && (
+            <div className="w-full mt-6">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm text-gray-400">Upload Progress</span>
+                <span className="text-sm text-gray-400">{Math.round(uploadProgress)}%</span>
+              </div>
+              <div className="w-full bg-gray-700 rounded-full h-2 mb-3">
+                <div
+                  className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${uploadProgress}%` }}
+                ></div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-900 to-black text-white p-4">
       <ToastContainer />
+      
+      {isLoading && <LoaderOverlay />}
       
       {current === "main" ? (
         <div className="min-h-screen flex flex-col items-center justify-center">
@@ -547,30 +591,6 @@ const Upload = () => {
                             />
                           </div>
                           
-                          {isSubmitting && (
-                            <div className="bg-gray-800 p-4 rounded-lg">
-                              <div className="flex items-center justify-between mb-2">
-                                <span>Upload Progress</span>
-                                <span>{Math.round(uploadProgress)}%</span>
-                              </div>
-                              <div className="w-full bg-gray-700 rounded-full h-4 mb-3">
-                                <div
-                                  className="bg-blue-500 h-4 rounded-full transition-all duration-300"
-                                  style={{ width: `${uploadProgress}%` }}
-                                ></div>
-                              </div>
-                              <div className="grid grid-cols-2 gap-4 text-sm text-gray-400">
-                                <div>
-                                  <p>Speed: {formatBytes(uploadSpeed)}/s</p>
-                                  <p>Uploaded: {formatBytes(uploadedSize)} / {formatBytes(fileSize)}</p>
-                                </div>
-                                <div className="text-right">
-                                  <p>Remaining: {formatTime(estimatedTime)}</p>
-                                </div>
-                              </div>
-                            </div>
-                          )}
-                          
                           <button
                             className={`bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-6 rounded-lg transition duration-300 flex items-center justify-center space-x-2 w-full ${
                               isSubmitting ? "opacity-50 cursor-not-allowed" : ""
@@ -706,30 +726,6 @@ const Upload = () => {
                   )}
                 </div>
               </div>
-              
-              {isSubmitting && (
-                <div className="bg-gray-900 p-4 rounded-lg">
-                  <div className="flex items-center justify-between mb-2">
-                    <span>Upload Progress</span>
-                    <span>{Math.round(uploadProgress)}%</span>
-                  </div>
-                  <div className="w-full bg-gray-700 rounded-full h-4 mb-3">
-                    <div
-                      className="bg-blue-500 h-4 rounded-full transition-all duration-300"
-                      style={{ width: `${uploadProgress}%` }}
-                    ></div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 text-sm text-gray-400">
-                    <div>
-                      <p>Speed: {formatBytes(uploadSpeed)}/s</p>
-                      <p>Uploaded: {formatBytes(uploadedSize)} / {formatBytes(fileSize)}</p>
-                    </div>
-                    <div className="text-right">
-                      <p>Remaining: {formatTime(estimatedTime)}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               <button
                 type="submit"

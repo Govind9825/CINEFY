@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Navbar from "../components/navbar";
 import {
   Play,
   Pause,
@@ -26,6 +27,7 @@ import {
 import { signOut, useSession } from "next-auth/react";
 
 import { socket } from "@/app/socket";
+import { Typewriter } from "react-simple-typewriter";
 
 const Stream = () => {
   // Video Player State
@@ -37,7 +39,7 @@ const Stream = () => {
   const [isSeasonDropdownOpen, setIsSeasonDropdownOpen] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [isSeeking, setIsSeeking] = useState(false); // Track seeking state
+  const [isSeeking, setIsSeeking] = useState(false);
   const videoRef = useRef(null);
 
   // Call State
@@ -48,7 +50,10 @@ const Stream = () => {
   const [authenticated, setAuthenticated] = useState(false);
   const [loading, setLoading] = useState(false);
   const [isVideoOn, setIsVideoOn] = useState(true);
-  const [isAudioOn, setIsAudioOn] = useState(true);
+  const [isAudioOn, setIsAudioOn] = useState(false);
+
+  // Check if content is a movie (1 season with 1 episode)
+  const isMovie = seasons.length === 1 && seasons[0].episodes.length === 1;
 
   useEffect(() => {
     const APP_ID = process.env.NEXT_PUBLIC_APP_ID;
@@ -187,6 +192,9 @@ const Stream = () => {
   };
 
   const createRoom = async () => {
+    if (!authenticated) {
+      return new Error("No user Found");
+    }
     try {
       const createdRoom = await SendBirdCall.createRoom({
         roomType: "small_room_for_video",
@@ -233,7 +241,7 @@ const Stream = () => {
       const existingRoom = await SendBirdCall.fetchRoomById(roomId);
       await existingRoom.enter({
         audioEnabled: false,
-        videoEnabled: false,
+        videoEnabled: true,
         localMediaView: document.getElementById("local_video_element_id"),
       });
       setRoom(existingRoom);
@@ -298,19 +306,20 @@ const Stream = () => {
     const videoContainer = document.createElement("div");
     videoContainer.className =
       "relative w-full h-[150px] rounded-md overflow-hidden mb-2";
+    videoContainer.id = `remote_video_${participant.participantId}`;
 
     const videoElement = document.createElement("video");
-    videoContainer.id = `remote_video_${participant.participantId}`;
     videoElement.autoplay = true;
     videoElement.className = "w-full h-full object-cover rounded-md";
 
+    // Add participant name label
     const userNameLabel = document.createElement("div");
     userNameLabel.className =
       "absolute bottom-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded";
-    if (participant.user.userId === userId)
-      userNameLabel.innerText =
-        participant.user.userId + " (You)" || "Unknown User";
-    else userNameLabel.innerText = participant.user.userId || "Unknown User";
+    userNameLabel.innerText =
+      participant.user.userId === userId
+        ? `${participant.user.userId} (You)`
+        : participant.user.userId || "Unknown User";
 
     videoContainer.appendChild(videoElement);
     videoContainer.appendChild(userNameLabel);
@@ -330,6 +339,7 @@ const Stream = () => {
           room.localParticipant.startVideo();
         }
         setIsVideoOn(!isVideoOn);
+        refreshLocalVideoContainer();
       }
     } catch (error) {
       console.error("Error toggling video:", error);
@@ -338,12 +348,15 @@ const Stream = () => {
 
   const toggleAudio = () => {
     try {
-      if (isAudioOn) {
-        room.localParticipant.muteMicrophone();
-      } else {
-        room.localParticipant.unmuteMicrophone();
+      if (room && room.localParticipant) {
+        if (isAudioOn) {
+          room.localParticipant.muteMicrophone();
+        } else {
+          room.localParticipant.unmuteMicrophone();
+        }
+        setIsAudioOn(!isAudioOn);
+        refreshLocalVideoContainer();
       }
-      setIsAudioOn(!isAudioOn);
     } catch (error) {
       console.error("Error toggling audio:", error);
     }
@@ -353,7 +366,6 @@ const Stream = () => {
     if (room) {
       await room.exit();
       setRoom(null);
-      // Clear remote video container
       const remoteVideoContainer = document.getElementById(
         "remote_video_container"
       );
@@ -377,36 +389,40 @@ const Stream = () => {
     // Play event
     socket.on("play", () => {
       if (videoRef.current) {
-        videoRef.current.play(); // Play the video
-        setIsPlaying(true); // Update state
+        videoRef.current.play();
+        setIsPlaying(true);
       }
     });
 
     // Pause event
     socket.on("pause", () => {
       if (videoRef.current) {
-        videoRef.current.pause(); // Pause the video
-        setIsPlaying(false); // Update state
+        videoRef.current.pause();
+        setIsPlaying(false);
       }
     });
 
     // Seek event
     socket.on("seek", ({ currentTime }) => {
-      if (typeof currentTime !== "number" || isNaN(currentTime) || !isFinite(currentTime)) {
+      if (
+        typeof currentTime !== "number" ||
+        isNaN(currentTime) ||
+        !isFinite(currentTime)
+      ) {
         console.error("Invalid currentTime received from server:", currentTime);
         return;
       }
 
       if (videoRef.current && !isSeeking) {
-        videoRef.current.currentTime = currentTime; // Set the video's currentTime
-        setCurrentTime(currentTime); // Update state
+        videoRef.current.currentTime = currentTime;
+        setCurrentTime(currentTime);
       }
     });
 
     // Change episode event
     socket.on("changeEpisode", ({ season, episode }) => {
-      setSelectedSeason(season); // Update season state
-      setSelectedEpisode(episode); // Update episode state
+      setSelectedSeason(season);
+      setSelectedEpisode(episode);
     });
 
     // Cleanup
@@ -416,7 +432,7 @@ const Stream = () => {
       socket.off("seek");
       socket.off("changeEpisode");
     };
-  }, [isSeeking]); // Add isSeeking as a dependency
+  }, [isSeeking]);
 
   const handlePlayPause = () => {
     if (!room?.roomId) {
@@ -425,20 +441,17 @@ const Stream = () => {
     }
 
     if (isPlaying) {
-      // Emit pause event with currentTime
       socket.emit("pause", {
         roomId: room.roomId,
         currentTime: videoRef.current?.currentTime || 0,
       });
     } else {
-      // Emit play event with currentTime
       socket.emit("play", {
         roomId: room.roomId,
         currentTime: videoRef.current?.currentTime || 0,
       });
     }
 
-    // Toggle local play/pause state
     setIsPlaying(!isPlaying);
   };
 
@@ -448,19 +461,16 @@ const Stream = () => {
       return;
     }
 
-    // Validate time
     if (typeof time !== "number" || isNaN(time) || !isFinite(time)) {
       console.error("Invalid currentTime:", time);
       return;
     }
 
-    // Emit seek event with the new time
     socket.emit("seek", {
       roomId: room.roomId,
       currentTime: time,
     });
 
-    // Update local currentTime state
     setCurrentTime(time);
   };
 
@@ -470,14 +480,12 @@ const Stream = () => {
       return;
     }
 
-    // Emit the episode change event to the server
     socket.emit("changeEpisode", {
-      roomId: room.roomId, // Include roomId
-      season, // Include season
-      episode, // Include episode
+      roomId: room.roomId,
+      season,
+      episode,
     });
 
-    // Update local state
     setSelectedSeason(season);
     setSelectedEpisode(episode);
   };
@@ -486,73 +494,173 @@ const Stream = () => {
     socket.emit("changeSeason", season);
   };
 
+  if (!authenticated) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-white">
-      {/* Main Flex Container */}
-      <div className="flex h-screen">
-        {/* Left Side (75% width) - Video Player and Controls */}
-        <div className="w-3/4 p-6 overflow-y-auto">
-          {/* Video Player */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.5 }}
-            className="w-full h-[400px] lg:h-[500px] bg-black rounded-xl shadow-2xl border-2 border-cyan-500 overflow-hidden relative"
-          >
-            {selectedEpisodeData?.link ? (
-              <video
-                ref={videoRef}
-                className="w-full h-full"
-                src={selectedEpisodeData?.link || ""}
-                controls
-                onPlay={() => {
-                  setIsPlaying(true);
-                  handlePlayPause();
-                }}
-                onPause={() => {
-                  setIsPlaying(false);
-                  handlePlayPause();
-                }}
-                onSeeking={() => setIsSeeking(true)} // User starts seeking
-                onSeeked={() => {
-                  setIsSeeking(false); // User stops seeking
-                  handleSeek(videoRef.current?.currentTime || 0); // Call handleSeek
-                }}
-                onTimeUpdate={(e) => {
-                  if (!isSeeking) {
-                    setCurrentTime(e.target.currentTime); // Only update state if not seeking
-                  }
-                }}
-              ></video>
-            ) : (
-              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
-                <p className="text-gray-400">No video URL provided.</p>
+    <div className="min-h-screen bg-black text-white">
+      <Navbar />
+      <div className="flex flex-col">
+        {/* Main Content Area */}
+        <div className="flex overflow-hidden">
+          {/* Left Side (75% width) - Video Player and Controls */}
+          <div className="w-3/4 pr-6 overflow-y-auto">
+            {/* Video Player */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
+              className="w-full h-[600px] lg:h-[725px] bg-black rounded-xl shadow-2xl border-2 border-cyan-500 overflow-hidden relative"
+            >
+              {selectedEpisodeData?.link ? (
+                <video
+                  ref={videoRef}
+                  className="w-full h-full"
+                  src={selectedEpisodeData?.link || ""}
+                  controls
+                  onPlay={() => {
+                    setIsPlaying(true);
+                    handlePlayPause();
+                  }}
+                  onPause={() => {
+                    setIsPlaying(false);
+                    handlePlayPause();
+                  }}
+                  onSeeking={() => setIsSeeking(true)}
+                  onSeeked={() => {
+                    setIsSeeking(false);
+                    handleSeek(videoRef.current?.currentTime || 0);
+                  }}
+                  onTimeUpdate={(e) => {
+                    if (!isSeeking) {
+                      setCurrentTime(e.target.currentTime);
+                    }
+                  }}
+                ></video>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
+                  <p className="text-gray-400">No video URL provided.</p>
+                </div>
+              )}
+            </motion.div>
+          </div>
+
+          {/* Right Side (25% width) - Call Feature */}
+          <div className="rounded-lg w-1/4 bg-gradient-to-b from-gray-800 to-gray-900 p-6 border-2 border-cyan-500 overflow-y-auto h-[725px]">
+            {userId ? (
+              <div className="flex flex-col space-y-4">
+                {authenticated && !room && (
+                  <div className="flex flex-col space-y-2">
+                    {videoData ? (
+                      <button
+                        onClick={createRoom}
+                        className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded flex items-center justify-center transition-transform hover:scale-105"
+                      >
+                        <FaVideo className="mr-2" /> Create Room
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => joinRoom(prompt("Enter Room ID"))}
+                        className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded flex items-center justify-center transition-transform hover:scale-105"
+                      >
+                        <FaVideo className="mr-2" /> Join Room
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {room && (
+                  <div className="flex flex-col space-y-3">
+                    <h2 className="text-xs text-gray-400">
+                      Room ID: {room.roomId}
+                    </h2>
+                    <div className="flex space-x-4">
+                      <button
+                        onClick={toggleVideo}
+                        className={`${
+                          isVideoOn
+                            ? "bg-blue-500 hover:bg-blue-600"
+                            : "bg-gray-600 hover:bg-gray-700"
+                        } text-white font-bold py-2 px-4 rounded flex items-center justify-center transition-transform hover:scale-105`}
+                      >
+                        {isVideoOn ? (
+                          <FaVideo className="mr-2" />
+                        ) : (
+                          <FaVideoSlash className="mr-2" />
+                        )}
+                      </button>
+                      <button
+                        onClick={toggleAudio}
+                        className={`${
+                          isAudioOn
+                            ? "bg-blue-500 hover:bg-blue-600"
+                            : "bg-gray-600 hover:bg-gray-700"
+                        } text-white font-bold py-2 px-4 rounded flex items-center justify-center transition-transform hover:scale-105`}
+                      >
+                        {isAudioOn ? (
+                          <FaMicrophone className="mr-2" />
+                        ) : (
+                          <FaMicrophoneSlash className="mr-2" />
+                        )}
+                      </button>
+                      <button
+                        onClick={leaveRoom}
+                        className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded flex items-center justify-center transition-transform hover:scale-105"
+                      >
+                        <FaPhoneSlash className="mr-2" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex flex-col space-y-2">
+                  <div
+                    id="remote_video_container"
+                    className="flex flex-col space-y-2"
+                  ></div>
+                </div>
               </div>
+            ) : (
+              <div className="flex flex-col space-y-4">loading</div>
             )}
-          </motion.div>
+          </div>
+        </div>
 
-          {/* Episode Description */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="mt-6 bg-gradient-to-br from-gray-800 to-gray-900 p-6 rounded-xl shadow-2xl border border-gray-700"
-          >
-            <div className="flex items-center gap-2 mb-4">
-              <Info size={20} className="text-cyan-400" />
-              <h3 className="text-xl font-semibold">Episode Description</h3>
-            </div>
-            <p className="text-gray-300">
-              {selectedEpisodeData?.desc || "No description available."}
-            </p>
-          </motion.div>
+        {/* Season & Episode List - Full width below main content */}
+        {/* Episode Description */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className={`mt-6 bg-gradient-to-br from-gray-800 to-gray-900 p-6 rounded-xl shadow-2xl border border-gray-700 ${
+            isMovie ? "my-10" : ""
+          }`}
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <Info size={20} className="text-cyan-400" />
+            <h3 className="text-xl font-semibold">
+              {isMovie ? "Movie Details" : "Episode Description"}
+            </h3>
+          </div>
+          <p className="text-gray-300">
+            {selectedEpisodeData?.desc || "No description available."}
+          </p>
+        </motion.div>
 
-          {/* Player Controls */}
+        {/* Player Controls - Simplified for movies */}
+        {!isMovie && (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.4 }}
-            className="mt-6 bg-gradient-to-br from-gray-800 to-gray-900 p-6 rounded-xl shadow-2xl border border-gray-700"
+            className={`mt-6 bg-gradient-to-br from-gray-800 to-gray-900 p-6 rounded-xl shadow-2xl border border-gray-700 ${
+              isMovie ? "my-10" : ""
+            }`}
           >
             <div className="flex justify-between items-center">
               <div className="flex gap-4">
@@ -563,215 +671,131 @@ const Stream = () => {
                   {isPlaying ? <Pause size={16} /> : <Play size={16} />}
                   {isPlaying ? "Pause" : "Play"}
                 </button>
-                <button className="flex items-center gap-2 text-sm hover:text-cyan-400 transition">
-                  <SkipForward size={16} /> Auto Next: On
-                </button>
-                <button className="flex items-center gap-2 text-sm hover:text-cyan-400 transition">
-                  <Clock size={16} /> Auto Skip Intro: On
-                </button>
+                <>
+                  <button className="flex items-center gap-2 text-sm hover:text-cyan-400 transition">
+                    <SkipForward size={16} /> Auto Next: On
+                  </button>
+                  <button className="flex items-center gap-2 text-sm hover:text-cyan-400 transition">
+                    <Clock size={16} /> Auto Skip Intro: On
+                  </button>
+                </>
               </div>
               <div className="flex gap-4">
-                <button
-                  onClick={() =>
-                    handleEpisodeChange(Math.max(selectedEpisode - 1, 1))
-                  }
-                  className="flex items-center gap-2 text-sm hover:text-cyan-400 transition"
-                >
-                  <SkipBack size={16} /> Prev
-                </button>
-                <button
-                  onClick={() =>
-                    handleEpisodeChange(
-                      Math.min(
-                        selectedEpisode + 1,
-                        selectedSeasonData?.episodes.length || 1
+                <>
+                  <button
+                    onClick={() =>
+                      handleEpisodeChange(Math.max(selectedEpisode - 1, 1))
+                    }
+                    className="flex items-center gap-2 text-sm hover:text-cyan-400 transition"
+                  >
+                    <SkipBack size={16} /> Prev
+                  </button>
+                  <button
+                    onClick={() =>
+                      handleEpisodeChange(
+                        Math.min(
+                          selectedEpisode + 1,
+                          selectedSeasonData?.episodes.length || 1
+                        )
                       )
-                    )
-                  }
-                  className="flex items-center gap-2 text-sm hover:text-cyan-400 transition"
-                >
-                  Next <SkipForward size={16} />
-                </button>
-                <button
-                  onClick={() => toggleBookmark(selectedEpisode)}
-                  className="flex items-center gap-2 text-sm hover:text-cyan-400 transition"
-                >
-                  <Bookmark size={16} />{" "}
-                  {bookmarkedEpisodes.includes(selectedEpisode)
-                    ? "Remove Bookmark"
-                    : "Bookmark"}
-                </button>
-                <button className="flex items-center gap-2 text-sm hover:text-cyan-400 transition">
-                  <Expand size={16} /> Expand
-                </button>
+                    }
+                    className="flex items-center gap-2 text-sm hover:text-cyan-400 transition"
+                  >
+                    Next <SkipForward size={16} />
+                  </button>
+                </>
               </div>
             </div>
           </motion.div>
-
-          {/* Season & Episode List */}
+        )}
+        {!isMovie && (
           <motion.div
             initial={{ x: -50, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             transition={{ duration: 0.5 }}
-            className="mt-6 bg-gradient-to-b from-gray-800 to-gray-900 p-6 rounded-xl shadow-2xl border border-gray-700"
+            className="w-full bg-gradient-to-b from-gray-800 to-gray-900 p-6 border-t border-gray-700 my-10 rounded-lg"
           >
-            {/* Season Dropdown */}
-            <div className="mb-6 relative">
-              <button
-                onClick={() => setIsSeasonDropdownOpen(!isSeasonDropdownOpen)}
-                className="w-full flex justify-between items-center p-3 bg-gradient-to-r from-cyan-600 to-blue-600 rounded-lg hover:from-cyan-500 hover:to-blue-500 transition-all"
-              >
-                <span className="flex items-center gap-2">
-                  <List size={18} />
-                  Season {selectedSeason}
-                </span>
-                <ChevronDown
-                  className={`transform transition-transform ${
-                    isSeasonDropdownOpen ? "rotate-180" : ""
-                  }`}
-                  size={18}
-                />
-              </button>
-              <AnimatePresence>
-                {isSeasonDropdownOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.2 }}
-                    className="absolute z-10 w-full mt-2 bg-gray-800 rounded-lg shadow-lg border border-gray-700"
-                  >
-                    {seasons.map((season) => (
-                      <button
-                        key={season.seasonNumber}
-                        onClick={() => {
-                          handleSeasonChange(season.seasonNumber);
-                          setIsSeasonDropdownOpen(false);
-                        }}
-                        className="w-full p-3 text-left hover:bg-gray-700 transition rounded-lg flex items-center gap-2"
-                      >
-                        <Play size={16} />
-                        Season {season.seasonNumber}
-                      </button>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Episode List */}
-            <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-              <Clock size={18} />
-              Episodes
-            </h3>
-            <div className="space-y-2">
-              {selectedSeasonData?.episodes.map((episode, i) => (
-                <motion.button
-                  key={episode._id}
-                  onClick={() => handleEpisodeChange(i + 1)}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  transition={{ type: "spring", stiffness: 200 }}
-                  className={`w-full flex justify-between items-center p-3 rounded-lg ${
-                    selectedEpisode === i + 1
-                      ? "bg-gradient-to-r from-cyan-600 to-blue-600 text-white"
-                      : "bg-gray-700 hover:bg-gray-600 transition"
-                  }`}
+            <div className="max-w-full mx-auto">
+              {/* Season Dropdown */}
+              <div className="mb-6 relative">
+                <button
+                  onClick={() => setIsSeasonDropdownOpen(!isSeasonDropdownOpen)}
+                  className="w-full flex justify-between items-center p-3 bg-gradient-to-r from-cyan-600 to-blue-600 rounded-lg hover:from-cyan-500 hover:to-blue-500 transition-all"
                 >
-                  <span>
-                    {i + 1}. {episode.name}
+                  <span className="flex items-center gap-2">
+                    <List size={18} />
+                    Season {selectedSeason}
                   </span>
-                  <div className="flex gap-2">
-                    {bookmarkedEpisodes.includes(i + 1) && (
-                      <Bookmark size={16} />
-                    )}
-                    {selectedEpisode === i + 1 && (
-                      <Play className="text-white" size={16} />
-                    )}
-                  </div>
-                </motion.button>
-              ))}
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Right Side (25% width) - Call Feature */}
-        <div className="m-[1.5%] rounded-lg w-1/4 bg-gradient-to-b from-gray-800 to-gray-900 p-6 border-l border-gray-700 overflow-y-auto">
-          {userId ? (
-            <div className="flex flex-col space-y-4">
-              <h1 className="font-bold text-lg">Authenticated as {userId}</h1>
-
-              {authenticated && !room && (
-                <div className="flex flex-col space-y-2">
-                  {videoData ? (
-                    <button
-                      onClick={createRoom}
-                      className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded flex items-center justify-center"
+                  <ChevronDown
+                    className={`transform transition-transform ${
+                      isSeasonDropdownOpen ? "rotate-180" : ""
+                    }`}
+                    size={18}
+                  />
+                </button>
+                <AnimatePresence>
+                  {isSeasonDropdownOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute z-10 w-full mt-2 bg-gray-800 rounded-lg shadow-lg border border-gray-700"
                     >
-                      <FaVideo className="mr-2" /> Create Room
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => joinRoom(prompt("Enter Room ID"))}
-                      className="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded flex items-center justify-center"
-                    >
-                      <FaVideo className="mr-2" /> Join Room
-                    </button>
+                      {seasons.map((season) => (
+                        <button
+                          key={season.seasonNumber}
+                          onClick={() => {
+                            handleSeasonChange(season.seasonNumber);
+                            setIsSeasonDropdownOpen(false);
+                          }}
+                          className="w-full p-3 text-left hover:bg-gray-700 transition rounded-lg flex items-center gap-2"
+                        >
+                          <Play size={16} />
+                          Season {season.seasonNumber}
+                        </button>
+                      ))}
+                    </motion.div>
                   )}
-                </div>
-              )}
+                </AnimatePresence>
+              </div>
 
-              {room && (
-                <div className="flex flex-col space-y-3">
-                  <h2 className="text-sm">In Room: {room.roomId}</h2>
-                  <div className="flex flex-col space-y-2">
-                    <button
-                      onClick={toggleVideo}
-                      className={`${
-                        isVideoOn ? "bg-blue-500" : "bg-gray-500"
-                      } text-white font-bold py-2 px-4 rounded flex items-center justify-center`}
-                    >
-                      {isVideoOn ? (
-                        <FaVideo className="mr-2" />
-                      ) : (
-                        <FaVideoSlash className="mr-2" />
+              {/* Episode List */}
+              <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                <Clock size={18} />
+                Episodes
+              </h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {selectedSeasonData?.episodes.map((episode, i) => (
+                  <motion.button
+                    key={episode._id}
+                    onClick={() => handleEpisodeChange(i + 1)}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    transition={{ type: "spring", stiffness: 200 }}
+                    className={`flex justify-between items-center p-3 rounded-lg ${
+                      selectedEpisode === i + 1
+                        ? "bg-gradient-to-r from-cyan-600 to-blue-600 text-white"
+                        : "bg-gray-700 hover:bg-gray-600 transition"
+                    }`}
+                  >
+                    <span>
+                      {i + 1}. {episode.name}
+                    </span>
+                    <div className="flex gap-2">
+                      {bookmarkedEpisodes.includes(i + 1) && (
+                        <Bookmark size={16} />
                       )}
-                      {isVideoOn ? "Turn Off Video" : "Turn On Video"}
-                    </button>
-                    <button
-                      onClick={toggleAudio}
-                      className={`${
-                        isAudioOn ? "bg-blue-500" : "bg-gray-500"
-                      } text-white font-bold py-2 px-4 rounded flex items-center justify-center`}
-                    >
-                      {isAudioOn ? (
-                        <FaMicrophone className="mr-2" />
-                      ) : (
-                        <FaMicrophoneSlash className="mr-2" />
+                      {selectedEpisode === i + 1 && (
+                        <Play className="text-white" size={16} />
                       )}
-                      {isAudioOn ? "Mute" : "Unmute"}
-                    </button>
-                    <button
-                      onClick={leaveRoom}
-                      className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded flex items-center justify-center"
-                    >
-                      <FaPhoneSlash className="mr-2" /> Leave Room
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex flex-col space-y-2">
-                <div
-                  id="remote_video_container"
-                  className="flex flex-col space-y-2"
-                ></div>
+                    </div>
+                  </motion.button>
+                ))}
               </div>
             </div>
-          ) : (
-            <div className="flex flex-col space-y-4">loading</div>
-          )}
-        </div>
+          </motion.div>
+        )}
       </div>
     </div>
   );

@@ -5,9 +5,11 @@
     --white-color: #fff;
     --home-icon-color: #5e90cd;
     --heart-icon-color: #5e90cd;
+    --heart-hover-color: #d34de1;
     --plus-icon-color: #5e90cd;
     --user-icon-color: #5e90cd;
     --bell-icon-color: #5e90cd;
+    --join-icon-color: #5e90cd;
   }
   
   /* ------------ BASE ------------ */
@@ -101,6 +103,22 @@
   
   
   .nav__link.active a .bx-heart{
+    color: var(--heart-icon-color);
+    text-shadow: 0 0 15px var(--heart-icon-color),
+                 0 0 30px var(--heart-icon-color),
+                 0 0 45px var(--heart-icon-color),
+                 0 0 60px var(--heart-icon-color);
+  }
+
+  .nav__link.active a .bx-user{
+    color: var(--heart-icon-color);
+    text-shadow: 0 0 15px var(--heart-icon-color),
+                 0 0 30px var(--heart-icon-color),
+                 0 0 45px var(--heart-icon-color),
+                 0 0 60px var(--heart-icon-color);
+  }
+
+  .nav__link.active a .bx-video{
     color: var(--heart-icon-color);
     text-shadow: 0 0 15px var(--heart-icon-color),
                  0 0 30px var(--heart-icon-color),
