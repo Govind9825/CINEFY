@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 // src/app/api/verify-payment/route.js
 import { NextResponse } from "next/server";
 import connectDB from "@/app/lib/db";
@@ -29,6 +30,25 @@ export async function POST(req) {
     }
 
     // Verify Razorpay signature
+=======
+
+
+import Razorpay from "razorpay";
+import crypto from "crypto";
+
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ message: "Method Not Allowed" });
+  }
+
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return res.status(400).json({ message: "Missing payment details" });
+    }
+
+>>>>>>> 720faca (Saving local changes before pulling)
     const secret = process.env.RAZORPAY_KEY_SECRET;
     if (!secret) {
       throw new Error("RAZORPAY_KEY_SECRET is not defined in .env.local");
@@ -39,6 +59,7 @@ export async function POST(req) {
       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
       .digest("hex");
 
+<<<<<<< HEAD
     // Log the signatures for debugging
     console.log("Generated Signature:", generated_signature);
     console.log("Razorpay Signature:", razorpay_signature);
@@ -95,3 +116,15 @@ export async function POST(req) {
     );
   }
 }
+=======
+    if (generated_signature === razorpay_signature) {
+      return res.status(200).json({ status: "ok", message: "Payment verified" });
+    } else {
+      return res.status(400).json({ status: "verification_failed", message: "Invalid signature" });
+    }
+  } catch (error) {
+    console.error("Error verifying payment:", error);
+    return res.status(500).json({ message: "Error verifying payment" });
+  }
+}
+>>>>>>> 720faca (Saving local changes before pulling)
