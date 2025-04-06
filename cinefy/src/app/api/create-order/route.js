@@ -15,11 +15,7 @@ export async function POST(req) {
     });
 
     const options = {
-<<<<<<< HEAD
-      amount: amount * 100, 
-=======
       amount: amount * 100, // Convert to the smallest currency unit
->>>>>>> 720faca (Saving local changes before pulling)
       currency,
       receipt: `receipt_${Date.now()}`,
     };
@@ -30,8 +26,4 @@ export async function POST(req) {
     console.error("Error creating order:", error);
     return NextResponse.json({ message: "Error creating order" }, { status: 500 });
   }
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 720faca (Saving local changes before pulling)

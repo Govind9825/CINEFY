@@ -1,54 +1,16 @@
-<<<<<<< HEAD
-// src/app/api/verify-payment/route.js
-import { NextResponse } from "next/server";
-import connectDB from "@/app/lib/db";
-import User from "@/app/models/user";
-import Razorpay from "razorpay";
 import crypto from "crypto";
 
 export async function POST(req) {
   try {
-    // Parse the request body
     const body = await req.json();
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, email, duration } = body;
-
-    // Log the request payload
-    console.log("Request Payload:", {
-      razorpay_order_id,
-      razorpay_payment_id,
-      razorpay_signature,
-      email,
-      duration,
-    });
-
-    // Validate required fields
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature || !email || !duration) {
-      return NextResponse.json(
-        { message: "Missing required fields" },
-        { status: 400 }
-      );
-    }
-
-    // Verify Razorpay signature
-=======
-
-
-import Razorpay from "razorpay";
-import crypto from "crypto";
-
-export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ message: "Method Not Allowed" });
-  }
-
-  try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = body;
 
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-      return res.status(400).json({ message: "Missing payment details" });
+      return new Response(JSON.stringify({ message: "Missing payment details" }), {
+        status: 400,
+      });
     }
 
->>>>>>> 720faca (Saving local changes before pulling)
     const secret = process.env.RAZORPAY_KEY_SECRET;
     if (!secret) {
       throw new Error("RAZORPAY_KEY_SECRET is not defined in .env.local");
@@ -59,72 +21,19 @@ export default async function handler(req, res) {
       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
       .digest("hex");
 
-<<<<<<< HEAD
-    // Log the signatures for debugging
-    console.log("Generated Signature:", generated_signature);
-    console.log("Razorpay Signature:", razorpay_signature);
-
-    if (generated_signature !== razorpay_signature) {
-      return NextResponse.json(
-        { status: "verification_failed", message: "Invalid signature" },
-        { status: 400 }
-      );
-    }
-
-    // Connect to the database
-    await connectDB();
-
-    // Calculate start and end dates for the premium membership
-    const startDate = new Date();
-    const endDate = new Date();
-    endDate.setMonth(endDate.getMonth() + duration);
-
-    // Update the user's premium status in the database
-    const user = await User.findOneAndUpdate(
-      { email },
-      {
-        premium: true, // ✅ Correct field name
-        premiumStartDate: startDate.toISOString(), // ✅ Correct field name
-        premiumEndDate: endDate.toISOString(), // ✅ Correct field name
-      },
-      { new: true }
-    );
-
-    // Log the updated user
-    console.log("Updated User:", user);
-
-    if (!user) {
-      return NextResponse.json(
-        { message: "User not found" },
-        { status: 404 }
-      );
-    }
-
-    // Return success response
-    return NextResponse.json(
-      {
-        status: "ok",
-        message: "Payment verified and user updated successfully",
-      },
-      { status: 200 }
-    );
-  } catch (error) {
-    console.error("Error verifying payment:", error);
-    return NextResponse.json(
-      { message: "Error verifying payment" },
-      { status: 500 }
-    );
-  }
-}
-=======
     if (generated_signature === razorpay_signature) {
-      return res.status(200).json({ status: "ok", message: "Payment verified" });
+      return new Response(JSON.stringify({ status: "ok", message: "Payment verified" }), {
+        status: 200,
+      });
     } else {
-      return res.status(400).json({ status: "verification_failed", message: "Invalid signature" });
+      return new Response(JSON.stringify({ status: "verification_failed", message: "Invalid signature" }), {
+        status: 400,
+      });
     }
   } catch (error) {
     console.error("Error verifying payment:", error);
-    return res.status(500).json({ message: "Error verifying payment" });
+    return new Response(JSON.stringify({ message: "Error verifying payment" }), {
+      status: 500,
+    });
   }
 }
->>>>>>> 720faca (Saving local changes before pulling)
