@@ -15,7 +15,7 @@ export async function POST(req) {
     });
 
     const options = {
-      amount: amount * 100, // Convert to the smallest currency unit
+      amount: amount * 100, 
       currency,
       receipt: `receipt_${Date.now()}`,
     };
