@@ -355,7 +355,7 @@ const Stream = () => {
           room.localParticipant.unmuteMicrophone();
         }
         setIsAudioOn(!isAudioOn);
-        // refreshLocalVideoContainer();
+       // refreshLocalVideoContainer();
       }
     } catch (error) {
       console.error("Error toggling audio:", error);
