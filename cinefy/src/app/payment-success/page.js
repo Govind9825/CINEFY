@@ -19,9 +19,4 @@ export default function PaymentSuccess() {
         </button>
       </div>
     );
-<<<<<<< HEAD
   }
-=======
-  }
-  
->>>>>>> 720faca (Saving local changes before pulling)

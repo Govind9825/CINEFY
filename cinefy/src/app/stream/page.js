@@ -339,7 +339,7 @@ const Stream = () => {
           room.localParticipant.startVideo();
         }
         setIsVideoOn(!isVideoOn);
-        refreshLocalVideoContainer();
+        // refreshLocalVideoContainer();
       }
     } catch (error) {
       console.error("Error toggling video:", error);
@@ -355,7 +355,7 @@ const Stream = () => {
           room.localParticipant.unmuteMicrophone();
         }
         setIsAudioOn(!isAudioOn);
-        refreshLocalVideoContainer();
+        // refreshLocalVideoContainer();
       }
     } catch (error) {
       console.error("Error toggling audio:", error);
