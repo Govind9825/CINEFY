@@ -4,9 +4,11 @@ import connectDB from "@/app/lib/db";
 import User from "@/app/models/user";
 import { NextResponse } from "next/server";
 
+// GET user by email
 export async function GET(req) {
   try {
     await connectDB();
+
     const { searchParams } = new URL(req.url);
     const email = searchParams.get("email");
 
@@ -22,7 +24,7 @@ export async function GET(req) {
 
     return NextResponse.json({ success: true, user }, { status: 200 });
   } catch (error) {
-    console.log("inside cath");
+    console.error("GET Error:", error.message);
     return NextResponse.json(
       { error: "Internal Server Error" },
       { status: 500 }
@@ -30,6 +32,7 @@ export async function GET(req) {
   }
 }
 
+// POST new user (signup)
 export async function POST(req) {
   try {
     await connectDB();
@@ -43,7 +46,21 @@ export async function POST(req) {
       );
     }
 
-    const newUser = new User({ name, email, premium });
+    // ✅ Check if user already exists
+    const existingUser = await User.findOne({ email });
+
+    if (existingUser) {
+      return new NextResponse(
+        JSON.stringify({ success: false, error: "User already exists" }),
+        { status: 200 } // not a failure — just already present
+      );
+    }
+
+    const newUser = new User({
+      name,
+      email,
+      premium: premium || false, // default to false
+    });
 
     await newUser.save();
 
@@ -51,17 +68,10 @@ export async function POST(req) {
       status: 201,
     });
   } catch (err) {
-    if (err.code === 11000) {
-      return new NextResponse(
-        JSON.stringify({ success: false, error: "User already exists" }),
-        { status: 400 }
-      );
-    }
-
+    console.error("POST Error:", err.message);
     return new NextResponse(
       JSON.stringify({ success: false, error: err.message }),
       { status: 500 }
     );
   }
 }
-

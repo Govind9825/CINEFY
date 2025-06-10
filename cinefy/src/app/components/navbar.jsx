@@ -35,6 +35,7 @@ const Navbar = () => {
   }, [pathname]);
 
   const handleClick = async (link) => {
+    sessionStorage.removeItem("selectedContent"); // Clear it on any route change
     if (link.isLogout) {
       setLoading(true);
       await signOut();

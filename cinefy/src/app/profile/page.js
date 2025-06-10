@@ -3,32 +3,19 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import Navbar from "../components/navbar";
-import { FaUserCircle } from "react-icons/fa";
+import { FaUserCircle, FaEdit, FaSave, FaTimes } from "react-icons/fa";
 import { useSession } from "next-auth/react";
 
 const Profile = () => {
-  const [showMembership, setShowMembership] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [isLoadingUser, setIsLoadingUser] = useState(true);
-  const [isPremium, setIsPremium] = useState(false);
-  const [startDate, setStartDate] = useState(null);
-  const [endDate, setEndDate] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedUser, setEditedUser] = useState({});
   const { data: session } = useSession();
   const [user, setUser] = useState({
     name: "",
     email: "",
-    isPremium: false,
+    joinedDate: "",
   });
-
-  useEffect(() => {
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.async = true;
-    document.body.appendChild(script);
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
 
   useEffect(() => {
     const fetchUserDetails = async () => {
@@ -38,10 +25,27 @@ const Profile = () => {
         if (!res.ok) throw new Error("Something went wrong");
 
         const data = await res.json();
-        setUser(data.user);
-        setIsPremium(data.user.premium);
+        setUser({
+          name: data.user.name || session.user.name,
+          email: data.user.email || session.user.email,
+          joinedDate: data.user.createdAt ? new Date(data.user.createdAt).toLocaleDateString() : "Recently",
+        });
+        setEditedUser({
+          name: data.user.name || session.user.name,
+          email: data.user.email || session.user.email,
+        });
       } catch (error) {
         console.error("Error fetching user details:", error);
+        // Fallback to session data
+        setUser({
+          name: session.user.name,
+          email: session.user.email,
+          joinedDate: "Recently",
+        });
+        setEditedUser({
+          name: session.user.name,
+          email: session.user.email,
+        });
       } finally {
         setIsLoadingUser(false);
       }
@@ -50,163 +54,99 @@ const Profile = () => {
     if (session) fetchUserDetails();
   }, [session?.user?.email, session]);
 
-  useEffect(() => {
-    if (isPremium) {
-      setStartDate(user.premiumStartDate);
-      setEndDate(user.premiumEndDate);
-    }
-  }, [isPremium]);
-
-  const handlePremiumStatus = (duration) => {
-    setIsPremium(true);
-    const start = new Date();
-    const end = new Date();
-    end.setMonth(end.getMonth() + duration);
-    setStartDate(start.toDateString());
-    setEndDate(end.toDateString());
+  const handleEdit = () => {
+    setIsEditing(true);
   };
 
-  const handlePayment = async (amount, duration) => {
-    if (!amount || isNaN(amount) || parseInt(amount, 10) <= 0) {
-      return alert("Please enter a valid amount.");
-    }
+  const handleSave = async () => {
+    // Here you would typically make an API call to update user data
+    setUser({ ...user, ...editedUser });
+    setIsEditing(false);
+  };
 
-    setLoading(true);
-    sessionStorage.setItem("amount", amount);
+  const handleCancel = () => {
+    setEditedUser({ name: user.name, email: user.email });
+    setIsEditing(false);
+  };
 
-    try {
-      const response = await fetch("/api/create-order", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ amount: parseInt(amount, 10), currency: "INR" }),
-      });
-
-      const order = await response.json();
-      if (!response.ok) throw new Error(order.message || "Order creation failed");
-
-      const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
-        amount: order.amount,
-        currency: order.currency,
-        name: "Cinefy",
-        description: "Video Streaming Payment",
-        order_id: order.id,
-        prefill: {
-          name: user?.name,
-          email: user?.email,
-          contact: "9999999999",
-        },
-        theme: { color: "#F37254" },
-        handler: async function (response) {
-          const verifyResponse = await fetch("/api/verify-payment", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-              email: user.email,
-              duration: duration,
-            }),
-          });
-
-          let verifyData;
-          try {
-            verifyData = await verifyResponse.json();
-          } catch (error) {
-            alert("Error verifying payment. Please try again.");
-            return;
-          }
-
-          if (verifyData.status === "ok") {
-            alert("Payment successful!");
-            handlePremiumStatus(duration);
-          } else {
-            alert("Payment verification failed. Please try again.");
-          }
-        },
-      };
-
-      const rzp = new window.Razorpay(options);
-      rzp.open();
-    } catch (error) {
-      console.error("Payment Error:", error);
-      alert("Error processing payment. Please try again.");
-    } finally {
-      setLoading(false);
-    }
+  const handleInputChange = (field, value) => {
+    setEditedUser({ ...editedUser, [field]: value });
   };
 
   if (isLoadingUser) {
     return (
-      <div className="flex justify-center items-center h-screen">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
-    </div>
+      <div className="min-h-screen bg-black flex justify-center items-center">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
+          <p className="text-gray-400 text-lg">Loading profile...</p>
+        </div>
+      </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col items-center">
+    <div className="min-h-screen bg-black text-white">
       <Navbar />
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="mt-10 bg-gray-900 shadow-2xl rounded-2xl p-8 w-96 flex flex-col items-center border border-gray-700"
-      >
-        <motion.div whileHover={{ scale: 1.1 }} className="text-gray-400">
-          <FaUserCircle className="w-24 h-24 text-gray-400" />
-        </motion.div>
-        <h2 className="mt-4 text-2xl font-bold">{user?.name || "Loading..."}</h2>
-        <p className="text-gray-400 text-sm">{user?.email || "Loading..."}</p>
-
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="mt-6 px-5 py-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 transition"
-          onClick={() => setShowMembership(!showMembership)}
+      <div className="flex flex-col items-center px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="bg-gradient-to-br from-gray-800 to-gray-900 shadow-2xl rounded-3xl p-10 w-full max-w-md border border-gray-700 backdrop-blur-sm"
         >
-          Check Membership Status
-        </motion.button>
-
-        {showMembership && (
-          <div className="mt-6 text-center text-sm">
-            {isPremium ? (
-              <p className="text-yellow-500 font-semibold">
-                You are a Premium Member!
-                <br />
-                Start Date: {startDate}
-                <br />
-                End Date: {endDate}
-              </p>
-            ) : (
-              <div className="text-gray-300">
-                <p className="mb-2">Do you want to upgrade to Premium?</p>
-                <div className="flex flex-col gap-2">
-                  <button
-                    className="px-4 py-2 bg-yellow-500 text-black rounded-lg shadow-md hover:bg-yellow-600 transition"
-                    onClick={() => handlePayment(999, 1)}
-                  >
-                    1 Month - ₹999
-                  </button>
-                  <button
-                    className="px-4 py-2 bg-yellow-500 text-black rounded-lg shadow-md hover:bg-yellow-600 transition"
-                    onClick={() => handlePayment(4999, 6)}
-                  >
-                    6 Months - ₹4999
-                  </button>
-                  <button
-                    className="px-4 py-2 bg-yellow-500 text-black rounded-lg shadow-md hover:bg-yellow-600 transition"
-                    onClick={() => handlePayment(8999, 12)}
-                  >
-                    1 Year - ₹8999
-                  </button>
+          {/* Profile Picture Section */}
+          <div className="flex flex-col items-center mb-8">
+            <motion.div 
+              whileHover={{ scale: 1.05 }} 
+              className="relative mb-4"
+            >
+              <div className="w-32 h-32 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 p-1">
+                <div className="w-full h-full rounded-full bg-gray-800 flex items-center justify-center">
+                  <FaUserCircle className="w-20 h-20 text-gray-400" />
                 </div>
               </div>
-            )}
+            </motion.div>
           </div>
-        )}
-      </motion.div>
+
+          {/* User Information */}
+          <div className="space-y-6">
+            {/* Name Field */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-300">Full Name</label>
+              {isEditing ? (
+                <input
+                  type="text"
+                  value={editedUser.name}
+                  onChange={(e) => handleInputChange('name', e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  placeholder="Enter your name"
+                />
+              ) : (
+                <div className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white">
+                  {user.name || "Not provided"}
+                </div>
+              )}
+            </div>
+
+            {/* Email Field */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-300">Email Address</label>
+              <div className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-gray-400">
+                {user.email}
+              </div>
+              <p className="text-xs text-gray-500">Email cannot be changed</p>
+            </div>
+
+            {/* Join Date */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-300">Member Since</label>
+              <div className="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-gray-400">
+                {user.joinedDate}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </div>
     </div>
   );
 };

@@ -1,25 +1,8 @@
 import NextAuth from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
-  
-const addUser = async (user) => {
-  try {
-    const response = await fetch("http://localhost:3000/api/login", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: user.name,
-        email: user.email,
-      }),
-    });
 
-    if (!response.ok) {
-      const result = await response.json();
-      throw new Error(result.error || "Something went wrong");
-    }
-  } catch (error) {
-    console.error("Error Adding User:", error.message);
-  }
-};
+import connectDB from "@/app/lib/db";
+import User from "@/app/models/user";
 
 export const authOptions = {
   providers: [
@@ -29,15 +12,39 @@ export const authOptions = {
     }),
   ],
   secret: process.env.NEXTAUTH_SECRET,
+
   callbacks: {
-    async session({ session }) {
-      if (session?.user) {
-        await addUser(session.user);
+    async signIn({ user }) {
+      try {
+        await connectDB();
+
+        const existingUser = await User.findOne({ email: user.email });
+
+        if (!existingUser) {
+          const newUser = new User({
+            name: user.name,
+            email: user.email,
+            premium: false,
+          });
+          await newUser.save();
+          console.log("✅ New user added:", newUser.email);
+        } else {
+          console.log("ℹ️ User already exists:", existingUser.email);
+        }
+
+        return true;
+      } catch (err) {
+        console.error("❌ Error in signIn callback:", err.message);
+        return false; // blocks sign in
       }
+    },
+
+    async session({ session }) {
       return session;
     },
-    async redirect({ url, baseUrl }) {
-      return `${baseUrl}/home`; 
+
+    async redirect({ baseUrl }) {
+      return `${baseUrl}/home`;
     },
   },
 };
