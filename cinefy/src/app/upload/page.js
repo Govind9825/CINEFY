@@ -43,7 +43,7 @@ const Upload = () => {
 
   const fetchContent = async () => {
     try {
-      const response = await fetch("http://localhost:3000/api/upload", {
+      const response = await fetch("process.env.NEXT_PUBLIC_BASE_URL/api/upload", {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
@@ -67,7 +67,7 @@ const Upload = () => {
 
   const addContent = async (formData) => {
     try {
-      const response = await fetch("http://localhost:3000/api/upload", {
+      const response = await fetch("process.env.NEXT_PUBLIC_BASE_URL/api/upload", {
         method: "POST",
         body: formData,
       });
@@ -113,7 +113,7 @@ const Upload = () => {
         formData.append("episodes[0][file]", episode.video);
       }
 
-      const response = await fetch("http://localhost:3000/api/upload", {
+      const response = await fetch("process.env.NEXT_PUBLIC_BASE_URL/api/upload", {
         method: "PUT",
         body: formData,
       });
@@ -141,7 +141,7 @@ const Upload = () => {
 
     try {
       setIsLoading(true);
-      const response = await fetch("http://localhost:3000/api/upload", {
+      const response = await fetch("process.env.NEXT_PUBLIC_BASE_URL/api/upload", {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
@@ -198,7 +198,7 @@ const Upload = () => {
       }
     });
 
-    xhr.open("PUT", "http://localhost:3000/api/upload");
+    xhr.open("PUT", "process.env.NEXT_PUBLIC_BASE_URL/api/upload");
     xhr.onload = () => {
       if (xhr.status === 200) {
         toast.success("Episode added successfully!");
@@ -266,7 +266,7 @@ const Upload = () => {
       }
     });
 
-    xhr.open("POST", "http://localhost:3000/api/upload", true);
+    xhr.open("POST", "process.env.NEXT_PUBLIC_BASE_URL/api/upload", true);
     xhr.send(formData);
 
     xhr.onload = () => {

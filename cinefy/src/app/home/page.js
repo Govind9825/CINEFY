@@ -34,7 +34,7 @@ export default function Home() {
 
       try {
         const res = await fetch(
-          `http://localhost:3000/api/login?email=${session.user.email}`,
+          `process.env.NEXT_PUBLIC_BASE_URL/api/login?email=${session.user.email}`,
           {
             method: "GET",
           }
@@ -57,7 +57,7 @@ export default function Home() {
   useEffect(() => {
     async function fetchVideos() {
       try {
-        const res = await fetch("http://localhost:3000/api/video");
+        const res = await fetch("process.env.NEXT_PUBLIC_BASE_URL/api/video");
         const data = await res.json();
 
         if (data.success) {
@@ -121,7 +121,7 @@ export default function Home() {
     const isLiked = user.fav.some((fav) => fav.Content_id === id);
 
     try {
-      const response = await fetch(`http://localhost:3000/api/favourite`, {
+      const response = await fetch(`process.env.NEXT_PUBLIC_BASE_URL/api/favourite`, {
         method: isLiked ? "DELETE" : "POST",
         headers: {
           "Content-Type": "application/json",
