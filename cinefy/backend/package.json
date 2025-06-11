@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "node server.js",
     "start": "node server.js",
-    "build": "echo 'no build required'"
+    "build": "next build"
   },
   "dependencies": {
     "next": "^14.1.0",
