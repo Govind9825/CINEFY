@@ -19,7 +19,7 @@ const Favourites = () => {
 
       try {
         const res = await fetch(
-          `process.env.NEXT_PUBLIC_BASE_URL/api/favourite?email=${session.user.email}`,
+          `/api/favourite?email=${session.user.email}`,
           {
             method: "GET",
           }
@@ -43,7 +43,7 @@ const Favourites = () => {
   useEffect(() => {
     const fetchAllContent = async () => {
       try {
-        const res = await fetch("process.env.NEXT_PUBLIC_BASE_URL/api/video");
+        const res = await fetch("/api/video");
         const data = await res.json();
 
         if (data.success) {

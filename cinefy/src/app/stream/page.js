@@ -71,7 +71,7 @@ const Stream = () => {
 
       try {
         const res = await fetch(
-          `process.env.NEXT_PUBLIC_BASE_URL/api/login?email=${session.user.email}`,
+          `/api/login?email=${session.user.email}`,
           {
             method: "GET",
             headers: {
