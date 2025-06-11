@@ -146,9 +146,9 @@ export default function Home() {
         <div className="min-h-screen bg-black text-gray-100">
           <Navbar />
 
-          <div className="container mx-auto px-4 py-8">
-            {/* Featured Content Slider */}
-            <div className="relative mb-16">
+          <div className="container mx-auto px-2 sm:px-4 py-4 sm:py-8">
+            {/* Featured Content Slider - Hidden on small screens */}
+            <div className="relative mb-6 sm:mb-8 hidden md:block">
               <div
                 className="slider rounded-xl overflow-hidden shadow-2xl"
                 ref={sliderRef}
@@ -156,8 +156,8 @@ export default function Home() {
                 <div className="list" ref={sliderListRef}>
                   {sliderData.map((item) => (
                     <div className="item relative group" key={item._id}>
-                      {/* Increased image size */}
-                      <div className="w-full h-[80vh] relative">
+                      {/* Responsive image height */}
+                      <div className="w-full h-[50vh] sm:h-[60vh] md:h-[70vh] lg:h-[80vh] relative">
                         <Image
                           src={item.thumbnail}
                           alt={item.name}
@@ -170,90 +170,41 @@ export default function Home() {
 
                       {/* Content container */}
                       <div className="absolute bottom-0 left-0 w-full">
-                        <div className="p-8">
-                          <h3 className="text-3xl font-bold mb-2 text-white">
+                        <div className="p-4 sm:p-6 md:p-8">
+                          <h3 className="text-xl sm:text-2xl md:text-3xl font-bold mb-2 text-white">
                             {item.name}
                           </h3>
-                          <p className="text-gray-300 mb-6 line-clamp-2">
+                          <p className="text-gray-300 mb-4 sm:mb-6 line-clamp-2 text-sm sm:text-base">
                             {item.description}
                           </p>
                         </div>
 
-                        {/* Action buttons - positioned at bottom left */}
-                        <div className="px-8 pb-8">
-                          <div className="flex space-x-4">
+                        {/* Action buttons - centered */}
+                        <div className="px-4 sm:px-6 md:px-8 pb-4 sm:pb-6 md:pb-8">
+                          <div className="flex justify-center space-x-4">
                             <button
                               onClick={() => playVideo(item)}
-                              className="relative px-8 py-3 bg-black border-2 border-white text-white font-medium rounded-md overflow-hidden transition-all duration-300"
-                              onMouseEnter={(e) =>
-                                e.currentTarget.classList.add(
-                                  "hover:shadow-lg",
-                                  "hover:shadow-white/20"
-                                )
-                              }
-                              onMouseLeave={(e) =>
-                                e.currentTarget.classList.remove(
-                                  "hover:shadow-lg",
-                                  "hover:shadow-white/20"
-                                )
-                              }
+                              className="relative p-3 sm:p-4 bg-black border-2 border-white text-white font-medium rounded-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-white/20"
                             >
-                              <span className="relative z-10 flex items-center">
+                              <span className="relative z-10 flex items-center justify-center">
                                 <svg
-                                  className="w-5 h-5 mr-2"
-                                  fill="none"
-                                  stroke="currentColor"
+                                  className="w-5 h-5 sm:w-6 sm:h-6"
+                                  fill="currentColor"
                                   viewBox="0 0 24 24"
                                 >
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
-                                  />
-                                  <path
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    strokeWidth="2"
-                                    d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                                  />
+                                  <path d="M8 5v14l11-7z"/>
                                 </svg>
-                                <span>Play Now</span>
                               </span>
-                              <span
-                                className="absolute inset-0 bg-white/10 transform origin-left scale-x-0 transition-transform duration-500 ease-[cubic-bezier(0.65,0,0.35,1)]"
-                                onMouseEnter={(e) =>
-                                  e.currentTarget.parentElement.classList.add(
-                                    "scale-x-100"
-                                  )
-                                }
-                                onMouseLeave={(e) =>
-                                  e.currentTarget.parentElement.classList.remove(
-                                    "scale-x-100"
-                                  )
-                                }
-                              ></span>
+                              <span className="absolute inset-0 bg-white/10 transform origin-center scale-0 transition-transform duration-500 ease-[cubic-bezier(0.65,0,0.35,1)] hover:scale-100 rounded-full"></span>
                             </button>
 
                             <button
                               onClick={() => streamVideo(item)}
-                              className="relative px-8 py-3 bg-black border-2 border-blue-400 text-blue-400 font-medium rounded-md overflow-hidden transition-all duration-300"
-                              onMouseEnter={(e) =>
-                                e.currentTarget.classList.add(
-                                  "hover:shadow-lg",
-                                  "hover:shadow-blue-400/20"
-                                )
-                              }
-                              onMouseLeave={(e) =>
-                                e.currentTarget.classList.remove(
-                                  "hover:shadow-lg",
-                                  "hover:shadow-blue-400/20"
-                                )
-                              }
+                              className="relative p-3 sm:p-4 bg-black border-2 border-blue-400 text-blue-400 font-medium rounded-full overflow-hidden transition-all duration-300 hover:shadow-lg hover:shadow-blue-400/20"
                             >
-                              <span className="relative z-10 flex items-center">
+                              <span className="relative z-10 flex items-center justify-center">
                                 <svg
-                                  className="w-5 h-5 mr-2"
+                                  className="w-5 h-5 sm:w-6 sm:h-6"
                                   fill="none"
                                   stroke="currentColor"
                                   viewBox="0 0 24 24"
@@ -265,21 +216,8 @@ export default function Home() {
                                     d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
                                   />
                                 </svg>
-                                <span>Stream Live</span>
                               </span>
-                              <span
-                                className="absolute inset-0 bg-blue-400/10 transform origin-left scale-x-0 transition-transform duration-500 ease-[cubic-bezier(0.65,0,0.35,1)]"
-                                onMouseEnter={(e) =>
-                                  e.currentTarget.parentElement.classList.add(
-                                    "scale-x-100"
-                                  )
-                                }
-                                onMouseLeave={(e) =>
-                                  e.currentTarget.parentElement.classList.remove(
-                                    "scale-x-100"
-                                  )
-                                }
-                              ></span>
+                              <span className="absolute inset-0 bg-blue-400/10 transform origin-center scale-0 transition-transform duration-500 ease-[cubic-bezier(0.65,0,0.35,1)] hover:scale-100 rounded-full"></span>
                             </button>
                           </div>
                         </div>
@@ -288,14 +226,14 @@ export default function Home() {
                   ))}
                 </div>
 
-                {/* Left/Right navigation buttons - positioned absolutely on the sides */}
-                <div className="absolute top-1/2 left-4 transform -translate-y-1/2 z-20">
+                {/* Navigation buttons - responsive positioning */}
+                <div className="absolute top-1/2 left-2 sm:left-4 transform -translate-y-1/2 z-20">
                   <button
-                    className="bg-black bg-opacity-60 hover:bg-opacity-90 p-3 rounded-full border border-gray-600 transition-all duration-300"
+                    className="bg-black bg-opacity-60 hover:bg-opacity-90 p-2 sm:p-3 rounded-full border border-gray-600 transition-all duration-300"
                     onClick={() => moveSlider("prev")}
                   >
                     <svg
-                      className="h-6 w-6"
+                      className="h-4 w-4 sm:h-6 sm:w-6"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -310,13 +248,13 @@ export default function Home() {
                   </button>
                 </div>
 
-                <div className="absolute top-1/2 right-4 transform -translate-y-1/2 z-20">
+                <div className="absolute top-1/2 right-2 sm:right-4 transform -translate-y-1/2 z-20">
                   <button
-                    className="bg-black bg-opacity-60 hover:bg-opacity-90 p-3 rounded-full border border-gray-600 transition-all duration-300"
+                    className="bg-black bg-opacity-60 hover:bg-opacity-90 p-2 sm:p-3 rounded-full border border-gray-600 transition-all duration-300"
                     onClick={() => moveSlider("next")}
                   >
                     <svg
-                      className="h-6 w-6"
+                      className="h-4 w-4 sm:h-6 sm:w-6"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -333,18 +271,21 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Content Categories */}
-            <div className="mb-16">
-              <h2 className="text-2xl font-semibold mb-6 text-white">
-                Recommended For You
+            {/* Content Categories - Responsive Grid */}
+            <div className="mb-6 sm:mb-8">
+              <h2 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 text-white px-2 sm:px-0">
+                {/* Show "All Videos" on small screens, "Recommended For You" on larger screens */}
+                <span className="md:hidden">All Videos</span>
+                <span className="hidden md:inline">Recommended For You</span>
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {sliderData.slice(0, 8).map((item) => (
+              <div className="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4 md:gap-6">
+                {/* Show more videos on small screens since there's no slider */}
+                {sliderData.slice(0, 12).map((item) => (
                   <div
                     key={item._id}
                     className="bg-gray-900 rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow group border border-gray-800 hover:border-blue-500"
                   >
-                    <div className="relative h-48">
+                    <div className="relative h-32 sm:h-40 md:h-48">
                       <Image
                         src={item.thumbnail}
                         alt={item.name}
@@ -354,7 +295,7 @@ export default function Home() {
                       <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-70" />
                       <button
                         onClick={() => toggleLike(item._id)}
-                        className="absolute top-2 right-2 z-10 p-2 bg-gray-900 bg-opacity-60 rounded-full hover:bg-opacity-80 transition-all"
+                        className="absolute top-1 sm:top-2 right-1 sm:right-2 z-10 p-1 sm:p-2 bg-gray-900 bg-opacity-60 rounded-full hover:bg-opacity-80 transition-all text-xs sm:text-base"
                       >
                         {user?.fav.some(
                           (fav) => fav.Content_id === item._id
@@ -365,78 +306,33 @@ export default function Home() {
                         )}
                       </button>
                     </div>
-                    <div className="p-4">
-                      <h3 className="font-semibold text-lg mb-1 text-white">
+                    <div className="p-3 sm:p-4">
+                      <h3 className="font-semibold text-sm sm:text-base md:text-lg mb-3 text-white line-clamp-2">
                         {item.name}
                       </h3>
-                      <div className="flex justify-between items-center mt-4">
+                      <div className="flex justify-center space-x-3">
                         <button
                           onClick={() => playVideo(item)}
-                          className="relative px-3 py-1.5 bg-black border border-white text-white text-sm rounded-none overflow-hidden transition-all duration-300"
-                          onMouseEnter={(e) => {
-                            e.currentTarget.classList.add(
-                              "hover:shadow-white/20"
-                            );
-                            e.currentTarget
-                              .querySelector(".play-hover")
-                              .classList.add("scale-x-100");
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.classList.remove(
-                              "hover:shadow-white/20"
-                            );
-                            e.currentTarget
-                              .querySelector(".play-hover")
-                              .classList.remove("scale-x-100");
-                          }}
+                          className="relative p-2 sm:p-2.5 bg-black border border-white text-white rounded-full overflow-hidden transition-all duration-300 hover:shadow-white/20 group"
                         >
-                          <span className="relative z-10 flex items-center">
+                          <span className="relative z-10 flex items-center justify-center">
                             <svg
-                              className="w-4 h-4 mr-1"
-                              fill="none"
-                              stroke="currentColor"
+                              className="w-4 h-4 sm:w-5 sm:h-5"
+                              fill="currentColor"
                               viewBox="0 0 24 24"
                             >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
-                              />
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                              />
+                              <path d="M8 5v14l11-7z"/>
                             </svg>
-                            Play
                           </span>
-                          <span className="play-hover absolute inset-0 bg-white/10 transform origin-left scale-x-0 transition-transform duration-500 ease-[cubic-bezier(0.65,0,0.35,1)]"></span>
+                          <span className="absolute inset-0 bg-white/10 transform origin-center scale-0 transition-transform duration-500 ease-[cubic-bezier(0.65,0,0.35,1)] group-hover:scale-100 rounded-full"></span>
                         </button>
                         <button
                           onClick={() => streamVideo(item)}
-                          className="relative px-3 py-1.5 bg-black border border-blue-400 text-blue-400 text-sm rounded-none overflow-hidden transition-all duration-300"
-                          onMouseEnter={(e) => {
-                            e.currentTarget.classList.add(
-                              "hover:shadow-blue-400/20"
-                            );
-                            e.currentTarget
-                              .querySelector(".stream-hover")
-                              .classList.add("scale-x-100");
-                          }}
-                          onMouseLeave={(e) => {
-                            e.currentTarget.classList.remove(
-                              "hover:shadow-blue-400/20"
-                            );
-                            e.currentTarget
-                              .querySelector(".stream-hover")
-                              .classList.remove("scale-x-100");
-                          }}
+                          className="relative p-2 sm:p-2.5 bg-black border border-blue-400 text-blue-400 rounded-full overflow-hidden transition-all duration-300 hover:shadow-blue-400/20 group"
                         >
-                          <span className="relative z-10 flex items-center">
+                          <span className="relative z-10 flex items-center justify-center">
                             <svg
-                              className="w-4 h-4 mr-1"
+                              className="w-4 h-4 sm:w-5 sm:h-5"
                               fill="none"
                               stroke="currentColor"
                               viewBox="0 0 24 24"
@@ -448,9 +344,8 @@ export default function Home() {
                                 d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
                               />
                             </svg>
-                            Stream
                           </span>
-                          <span className="stream-hover absolute inset-0 bg-blue-400/10 transform origin-left scale-x-0 transition-transform duration-500 ease-[cubic-bezier(0.65,0,0.35,1)]"></span>
+                          <span className="absolute inset-0 bg-blue-400/10 transform origin-center scale-0 transition-transform duration-500 ease-[cubic-bezier(0.65,0,0.35,1)] group-hover:scale-100 rounded-full"></span>
                         </button>
                       </div>
                     </div>
@@ -463,8 +358,8 @@ export default function Home() {
           <Footer />
         </div>
       ) : (
-        <div className="min-h-screen bg-black flex items-center justify-center">
-          <h2 className="text-white text-2xl">Please log in to continue</h2>
+        <div className="min-h-screen bg-black flex items-center justify-center px-4">
+          <h2 className="text-white text-xl sm:text-2xl text-center">Please log in to continue</h2>
         </div>
       )}
     </>
