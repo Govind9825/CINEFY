@@ -49,7 +49,7 @@ const Stream = () => {
   const [room, setRoom] = useState(null);
   const [authenticated, setAuthenticated] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [isVideoOn, setIsVideoOn] = useState(true);
+  const [isVideoOn, setIsVideoOn] = useState(false);
   const [isAudioOn, setIsAudioOn] = useState(false);
 
   // Check if content is a movie (1 season with 1 episode)
@@ -241,7 +241,7 @@ const Stream = () => {
       const existingRoom = await SendBirdCall.fetchRoomById(roomId);
       await existingRoom.enter({
         audioEnabled: false,
-        videoEnabled: true,
+        videoEnabled: false,
         localMediaView: document.getElementById("local_video_element_id"),
       });
       setRoom(existingRoom);
@@ -303,32 +303,38 @@ const Stream = () => {
   };
 
   const addRemoteVideo = (participant) => {
-    const videoContainer = document.createElement("div");
-    videoContainer.className =
-      "relative w-full h-[150px] rounded-md overflow-hidden mb-2";
-    videoContainer.id = `remote_video_${participant.participantId}`;
+  const isLocal = participant.user.userId === userId;
 
-    const videoElement = document.createElement("video");
-    videoElement.autoplay = true;
-    videoElement.className = "w-full h-full object-cover rounded-md";
+  const videoContainer = document.createElement("div");
+  videoContainer.className =
+    "relative w-full h-[150px] rounded-md overflow-hidden mb-2";
+  videoContainer.id = `remote_video_${participant.participantId}`;
 
-    // Add participant name label
-    const userNameLabel = document.createElement("div");
-    userNameLabel.className =
-      "absolute bottom-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded";
-    userNameLabel.innerText =
-      participant.user.userId === userId
-        ? `${participant.user.userId} (You)`
-        : participant.user.userId || "Unknown User";
+  const videoElement = document.createElement("video");
+  videoElement.autoplay = true;
+  videoElement.className = "w-full h-full object-cover rounded-md";
 
-    videoContainer.appendChild(videoElement);
-    videoContainer.appendChild(userNameLabel);
-    document
-      .getElementById("remote_video_container")
-      .appendChild(videoContainer);
+  // ✅ Mute the video if it's your own (prevents hearing your voice)
+  if (isLocal) {
+    videoElement.muted = true;
+  }
 
-    participant.setMediaView(videoElement);
-  };
+  const userNameLabel = document.createElement("div");
+  userNameLabel.className =
+    "absolute bottom-2 left-2 bg-black bg-opacity-50 text-white px-2 py-1 rounded";
+  userNameLabel.innerText = isLocal
+    ? `${participant.user.userId} (You)`
+    : participant.user.userId || "Unknown User";
+
+  videoContainer.appendChild(videoElement);
+  videoContainer.appendChild(userNameLabel);
+  document
+    .getElementById("remote_video_container")
+    .appendChild(videoContainer);
+
+  participant.setMediaView(videoElement);
+};
+
 
   const toggleVideo = () => {
     try {
@@ -355,7 +361,6 @@ const Stream = () => {
           room.localParticipant.unmuteMicrophone();
         }
         setIsAudioOn(!isAudioOn);
-       // refreshLocalVideoContainer();
       }
     } catch (error) {
       console.error("Error toggling audio:", error);
@@ -617,6 +622,8 @@ const Stream = () => {
                     </div>
                   </div>
                 )}
+
+                
 
                 <div className="flex flex-col space-y-2">
                   <div
