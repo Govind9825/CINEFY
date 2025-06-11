@@ -1,9 +1,3 @@
-import NextAuth from "next-auth";
-import GoogleProvider from "next-auth/providers/google";
-
-import connectDB from "@/app/lib/db";
-import User from "@/app/models/user";
-
 export const authOptions = {
   providers: [
     GoogleProvider({
@@ -12,6 +6,9 @@ export const authOptions = {
     }),
   ],
   secret: process.env.NEXTAUTH_SECRET,
+
+  // ✅ Add this line
+  trustHost: true,
 
   callbacks: {
     async signIn({ user }) {
@@ -35,7 +32,7 @@ export const authOptions = {
         return true;
       } catch (err) {
         console.error("❌ Error in signIn callback:", err.message);
-        return false; // blocks sign in
+        return false;
       }
     },
 
@@ -48,6 +45,3 @@ export const authOptions = {
     },
   },
 };
-
-const handler = NextAuth(authOptions);
-export { handler as GET, handler as POST };
