@@ -1,3 +1,5 @@
+"use client"
+
 export default function PaymentSuccess() {
     return (
       <div style={{ textAlign: "center", marginTop: "50px" }}>
