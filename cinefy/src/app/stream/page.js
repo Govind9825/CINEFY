@@ -42,6 +42,7 @@ const Stream = () => {
   const [isSeeking, setIsSeeking] = useState(false);
   const videoRef = useRef(null);
   const isRemoteSeekRef = useRef(false);
+  const isRemotePlayPauseRef = useRef(false);
 
   // Call State
   const [user, setUser] = useState();
@@ -391,14 +392,15 @@ const Stream = () => {
     // Play event
     socket.on("play", () => {
       if (videoRef.current) {
+        isRemotePlayPauseRef.current = true;
         videoRef.current.play();
         setIsPlaying(true);
       }
     });
 
-    // Pause event
     socket.on("pause", () => {
       if (videoRef.current) {
+        isRemotePlayPauseRef.current = true;
         videoRef.current.pause();
         setIsPlaying(false);
       }
@@ -439,23 +441,29 @@ const Stream = () => {
 
   const handlePlayPause = () => {
     if (!room?.roomId) {
-      console.error("Room ID is missing");
-      return;
-    }
+    console.error("Room ID is missing");
+    return;
+  }
 
-    if (isPlaying) {
-      socket.emit("pause", {
-        roomId: room.roomId,
-        currentTime: videoRef.current?.currentTime || 0,
-      });
-    } else {
-      socket.emit("play", {
-        roomId: room.roomId,
-        currentTime: videoRef.current?.currentTime || 0,
-      });
-    }
+  // If play/pause was triggered remotely, avoid re-emitting it
+  if (isRemotePlayPauseRef.current) {
+    isRemotePlayPauseRef.current = false;
+    return;
+  }
 
-    setIsPlaying(!isPlaying);
+  const currentTime = videoRef.current?.currentTime || 0;
+
+  if (isPlaying) {
+    socket.emit("pause", {
+      roomId: room.roomId,
+      currentTime,
+    });
+  } else {
+    socket.emit("play", {
+      roomId: room.roomId,
+      currentTime,
+    });
+  }
   };
 
   const handleSeek = (time) => {
