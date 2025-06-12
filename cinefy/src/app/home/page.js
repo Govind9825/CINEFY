@@ -358,9 +358,9 @@ export default function Home() {
           <Footer />
         </div>
       ) : (
-        <div className="min-h-screen bg-black flex items-center justify-center px-4">
-          <h2 className="text-white text-xl sm:text-2xl text-center">Please log in to continue</h2>
-        </div>
+        <div className="fixed top-0 left-0 w-full h-full flex justify-center items-center bg-black z-50">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-500"></div>
+      </div>
       )}
     </>
   );

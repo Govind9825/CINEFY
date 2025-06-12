@@ -49,40 +49,7 @@ export default function AnimeWatchPage() {
   
     fetchVideoData();
 
-    // Fullscreen change listener
-    const handleFullscreenChange = () => {
-      const isCurrentlyFullscreen = !!document.fullscreenElement;
-      setIsFullscreen(isCurrentlyFullscreen);
-      
-      // Force landscape orientation on mobile when entering fullscreen
-      if (isCurrentlyFullscreen && isMobile && screen.orientation && screen.orientation.lock) {
-        screen.orientation.lock('landscape').catch(err => {
-          console.log('Screen orientation lock failed:', err);
-        });
-      }
-    };
-
-    // Orientation change listener for mobile
-    const handleOrientationChange = () => {
-      if (isFullscreen && isMobile) {
-        // Small delay to ensure orientation change is complete
-        setTimeout(() => {
-          if (videoRef.current) {
-            videoRef.current.style.width = '100vw';
-            videoRef.current.style.height = '100vh';
-          }
-        }, 100);
-      }
-    };
-
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    window.addEventListener('orientationchange', handleOrientationChange);
-    
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-      window.removeEventListener('orientationchange', handleOrientationChange);
-    };
-  }, [isMobile, isFullscreen]);
+  })
 
   const selectedSeasonData = seasons.find((season) => season.seasonNumber === selectedSeason);
   const selectedEpisodeData = selectedSeasonData?.episodes[selectedEpisode - 1];
@@ -121,17 +88,17 @@ export default function AnimeWatchPage() {
     setIsMobileSidebarOpen(false);
   };
 
-  const toggleFullscreen = () => {
-    if (!videoContainerRef.current) return;
+  // const toggleFullscreen = () => {
+  //   if (!videoContainerRef.current) return;
     
-    if (!document.fullscreenElement) {
-      videoContainerRef.current.requestFullscreen().catch(err => {
-        console.error(`Error attempting to enable fullscreen: ${err.message}`);
-      });
-    } else {
-      document.exitFullscreen();
-    }
-  };
+  //   if (!document.fullscreenElement) {
+  //     videoContainerRef.current.requestFullscreen().catch(err => {
+  //       console.error(`Error attempting to enable fullscreen: ${err.message}`);
+  //     });
+  //   } else {
+  //     document.exitFullscreen();
+  //   }
+  // };
 
   // Auto-play next episode if enabled
   useEffect(() => {
