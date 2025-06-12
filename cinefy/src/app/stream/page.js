@@ -41,6 +41,7 @@ const Stream = () => {
   const [currentTime, setCurrentTime] = useState(0);
   const [isSeeking, setIsSeeking] = useState(false);
   const videoRef = useRef(null);
+  const isRemoteSeekRef = useRef(false);
 
   // Call State
   const [user, setUser] = useState();
@@ -414,7 +415,8 @@ const Stream = () => {
         return;
       }
 
-      if (videoRef.current && !isSeeking) {
+      if (videoRef.current) {
+        isRemoteSeekRef.current = true; // mark it as remote-triggered
         videoRef.current.currentTime = currentTime;
         setCurrentTime(currentTime);
       }
@@ -464,6 +466,12 @@ const Stream = () => {
 
     if (typeof time !== "number" || isNaN(time) || !isFinite(time)) {
       console.error("Invalid currentTime:", time);
+      return;
+    }
+
+    // If it's a remote seek, don't emit again
+    if (isRemoteSeekRef.current) {
+      isRemoteSeekRef.current = false; // reset flag
       return;
     }
 
