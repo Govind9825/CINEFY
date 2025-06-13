@@ -102,24 +102,26 @@ export default function AnimeWatchPage() {
 
   // Auto-play next episode if enabled
   useEffect(() => {
-    if (!videoRef.current || !playerSettings.autoNext || isMovie) return;
+  const video = videoRef.current;
+  if (!video || !playerSettings.autoNext || isMovie) return;
 
-    const handleEnded = () => {
+  const handleEnded = () => {
+    setTimeout(() => {
       if (selectedEpisode < selectedSeasonData?.episodes.length) {
         setSelectedEpisode(prev => prev + 1);
       } else if (selectedSeason < seasons.length) {
-        setSelectedSeason(selectedSeason + 1);
+        setSelectedSeason(prev => prev + 1);
         setSelectedEpisode(1);
       }
-    };
+    }, 300); // small delay to prevent rapid chained updates
+  };
 
-    videoRef.current.addEventListener('ended', handleEnded);
-    return () => {
-      if (videoRef.current) {
-        videoRef.current.removeEventListener('ended', handleEnded);
-      }
-    };
-  }, [selectedEpisode, selectedSeason, playerSettings.autoNext, isMovie]);
+  video.addEventListener('ended', handleEnded);
+
+  return () => {
+    video.removeEventListener('ended', handleEnded);
+  };
+}, [playerSettings.autoNext, isMovie, selectedEpisode, selectedSeason, seasons.length, selectedSeasonData?.episodes.length]);
 
   return (
     <div className="min-h-screen bg-black text-white">
@@ -226,6 +228,8 @@ export default function AnimeWatchPage() {
                   className="w-full h-full"
                   src={`${selectedEpisodeData.link}`}
                   controls
+                  controlsList="nodownload"
+                  disablePictureInPicture
                   autoPlay={playerSettings.autoPlay}
                   allowFullScreen
                   playsInline

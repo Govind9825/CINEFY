@@ -441,29 +441,29 @@ const Stream = () => {
 
   const handlePlayPause = () => {
     if (!room?.roomId) {
-    console.error("Room ID is missing");
-    return;
-  }
+      console.error("Room ID is missing");
+      return;
+    }
 
-  // If play/pause was triggered remotely, avoid re-emitting it
-  if (isRemotePlayPauseRef.current) {
-    isRemotePlayPauseRef.current = false;
-    return;
-  }
+    // If play/pause was triggered remotely, avoid re-emitting it
+    if (isRemotePlayPauseRef.current) {
+      isRemotePlayPauseRef.current = false;
+      return;
+    }
 
-  const currentTime = videoRef.current?.currentTime || 0;
+    const currentTime = videoRef.current?.currentTime || 0;
 
-  if (isPlaying) {
-    socket.emit("pause", {
-      roomId: room.roomId,
-      currentTime,
-    });
-  } else {
-    socket.emit("play", {
-      roomId: room.roomId,
-      currentTime,
-    });
-  }
+    if (isPlaying) {
+      socket.emit("pause", {
+        roomId: room.roomId,
+        currentTime,
+      });
+    } else {
+      socket.emit("play", {
+        roomId: room.roomId,
+        currentTime,
+      });
+    }
   };
 
   const handleSeek = (time) => {
@@ -540,6 +540,8 @@ const Stream = () => {
                   className="w-full h-full"
                   src={selectedEpisodeData?.link || ""}
                   controls
+                  controlsList="nodownload"
+                  disablePictureInPicture
                   onPlay={() => {
                     setIsPlaying(true);
                     handlePlayPause();
